@@ -1,0 +1,46 @@
+<HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="{{ name }}" enabled="true">
+  <elementProp name="HTTPSampler.arguments" elementType="Arguments">
+    <collectionProp name="Arguments.arguments">
+      {% if body is defined and body %}
+      <elementProp name="" elementType="HTTPArgument">
+        <boolProp name="HTTPArgument.always_encode">false</boolProp>
+        <stringProp name="Argument.value">{{ body }}</stringProp>
+        <stringProp name="Argument.metadata">=</stringProp>
+      </elementProp>
+      {% elif params is defined and params %}
+      {% for param in params %}
+      <elementProp name="{{ param.name }}" elementType="HTTPArgument">
+        <boolProp name="HTTPArgument.always_encode">true</boolProp>
+        <stringProp name="Argument.name">{{ param.name }}</stringProp>
+        <stringProp name="Argument.value">{{ param.value }}</stringProp>
+        <stringProp name="Argument.metadata">=</stringProp>
+      </elementProp>
+      {% endfor %}
+      {% endif %}
+    </collectionProp>
+  </elementProp>
+  <stringProp name="HTTPSampler.domain">{{ domain | default('') }}</stringProp>
+  <stringProp name="HTTPSampler.port">{{ port | default('') }}</stringProp>
+  <stringProp name="HTTPSampler.protocol">{{ protocol | default('https') }}</stringProp>
+  <stringProp name="HTTPSampler.path">{{ path | default('') }}</stringProp>
+  <stringProp name="HTTPSampler.method">{{ method | default('GET') }}</stringProp>
+  <stringProp name="HTTPSampler.contentEncoding">{{ contentEncoding | default('utf-8') }}</stringProp>
+  <boolProp name="HTTPSampler.follow_redirects">{{ followRedirects | default('true') }}</boolProp>
+  <boolProp name="HTTPSampler.use_keepalive">{{ useKeepalive | default('true') }}</boolProp>
+  <boolProp name="HTTPSampler.DO_MULTIPART_POST">{{ multipart | default('false') }}</boolProp>
+  <stringProp name="HTTPSampler.connect_timeout">{{ connectTimeout | default('') }}</stringProp>
+  <stringProp name="HTTPSampler.response_timeout">{{ responseTimeout | default('') }}</stringProp>
+  {% if fileUploads is defined and fileUploads %}
+  <elementProp name="HTTPsampler.Files" elementType="HTTPFileArgs">
+    <collectionProp name="HTTPFileArgs.files">
+      {% for fu in fileUploads %}
+      <elementProp name="{{ fu.paramName }}" elementType="HTTPFileArg">
+        <stringProp name="File.path">{{ fu.filePath }}</stringProp>
+        <stringProp name="File.paramname">{{ fu.paramName }}</stringProp>
+        <stringProp name="File.mimetype">{{ fu.mimeType }}</stringProp>
+      </elementProp>
+      {% endfor %}
+    </collectionProp>
+  </elementProp>
+  {% endif %}
+</HTTPSamplerProxy>

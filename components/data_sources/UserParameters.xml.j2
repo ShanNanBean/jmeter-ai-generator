@@ -1,0 +1,21 @@
+<UserParameters guiclass="UserParametersGui" testclass="UserParameters" testname="{{ name | default('User Parameters') }}" enabled="true">
+  <collectionProp name="UserParameters.names">
+    {% if parameters is defined and parameters %}
+    {% for param in parameters[0] %}
+    <stringProp name="{{ param.key }}">{{ param.key }}</stringProp>
+    {% endfor %}
+    {% endif %}
+  </collectionProp>
+  <collectionProp name="UserParameters.values_per_iteration">
+    {% if parameters is defined and parameters %}
+    {% for iteration in parameters %}
+    <collectionProp name="">
+      {% for param in iteration %}
+      <stringProp name="{{ param.key }}">{{ param.value }}</stringProp>
+      {% endfor %}
+    </collectionProp>
+    {% endfor %}
+    {% endif %}
+  </collectionProp>
+  <boolProp name="UserParameters.once_per_iteration">true</boolProp>
+</UserParameters>

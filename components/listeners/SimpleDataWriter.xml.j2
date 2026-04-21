@@ -1,0 +1,12 @@
+<SimpleDataWriter guiclass="SimpleDataWriterGui" testclass="SimpleDataWriter" testname="{{ name | default('Simple Data Writer') }}" enabled="true">
+  {% if file is defined and file %}
+  <stringProp name="filename">{{ file }}</stringProp>
+  {% else %}
+  <stringProp name="filename"></stringProp>
+  {% endif %}
+  <boolProp name="SampleResult.save.request">true</boolProp>
+  <boolProp name="SampleResult.save.response">true</boolProp>
+  <boolProp name="SampleResult.save.success">true</boolProp>
+  <boolProp name="SampleResult.save.time">true</boolProp>
+  <boolProp name="SampleResult.save.latency">true</boolProp>
+</SimpleDataWriter>

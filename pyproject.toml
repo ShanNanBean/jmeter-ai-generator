@@ -1,0 +1,9 @@
+[project]
+name = "jmeter-ai-generator"
+version = "0.1.0"
+description = "AI-powered JMeter test script generator"
+requires-python = ">=3.10"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"

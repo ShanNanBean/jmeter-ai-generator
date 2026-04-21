@@ -1,0 +1,40 @@
+"""Validation API routes."""
+
+from fastapi import APIRouter
+from api.models.request_models import ValidateJMXRequest, ValidateIRRequest, ValidationResponse
+from core.validator import JMXValidator
+from core.ir_model import IRDocument
+
+router = APIRouter()
+
+
+@router.post("/validate", response_model=ValidationResponse)
+async def validate_jmx(request: ValidateJMXRequest):
+    """Validate a JMX XML string."""
+    validator = JMXValidator()
+    result = validator.validate(request.jmx)
+    return ValidationResponse(
+        valid=result.valid,
+        issues=[
+            {
+                "severity": i.severity,
+                "category": i.category,
+                "message": i.message,
+                "location": i.location,
+            }
+            for i in result.issues
+        ],
+    )
+
+
+@router.post("/validate-ir", response_model=ValidationResponse)
+async def validate_ir(request: ValidateIRRequest):
+    """Validate IR structure."""
+    try:
+        IRDocument.model_validate(request.ir)
+        return ValidationResponse(valid=True, issues=[])
+    except Exception as e:
+        return ValidationResponse(
+            valid=False,
+            issues=[{"severity": "error", "category": "structure", "message": str(e)}],
+        )

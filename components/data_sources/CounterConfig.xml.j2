@@ -1,0 +1,8 @@
+<CounterConfig guiclass="CounterConfigGui" testclass="CounterConfig" testname="{{ name | default('Counter') }}" enabled="true">
+  <stringProp name="CounterConfig.start">{{ start | default('1') }}</stringProp>
+  <stringProp name="CounterConfig.increment">{{ increment | default('1') }}</stringProp>
+  <stringProp name="CounterConfig.end">{{ end | default('999999') }}</stringProp>
+  <stringProp name="CounterConfig.format">{{ format | default('') }}</stringProp>
+  <stringProp name="CounterConfig.var_name">{{ variable }}</stringProp>
+  <boolProp name="CounterConfig.per_user">{{ perUser | default('false') }}</boolProp>
+</CounterConfig>

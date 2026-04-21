@@ -1,0 +1,6 @@
+<JSONPathExtractor guiclass="JSONPathExtractorGui" testclass="JSONPathExtractor" testname="{{ name | default('JSON Extractor') }}" enabled="true">
+  <stringProp name="JSONPathExtractor.referenceNames">{{ variable }}</stringProp>
+  <stringProp name="JSONPathExtractor.jsonPathExprs">{{ path }}</stringProp>
+  <stringProp name="JSONPathExtractor.defaultValues">{{ defaultValue | default('NOT_FOUND') }}</stringProp>
+  <stringProp name="JSONPathExtractor.match_numbers">{{ matchNo | default('0') }}</stringProp>
+</JSONPathExtractor>

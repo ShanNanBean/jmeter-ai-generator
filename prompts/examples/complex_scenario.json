@@ -1,0 +1,81 @@
+{
+  "testPlan": {
+    "name": "复杂场景-下单支付上传",
+    "variables": [
+      {"key": "base_url", "value": "https://api.example.com"}
+    ]
+  },
+  "threadGroups": [
+    {
+      "name": "用户流程",
+      "threads": 50,
+      "rampUp": 10,
+      "duration": 300,
+      "loop": -1
+    }
+  ],
+  "scenarios": [
+    {
+      "name": "完整业务流程",
+      "threadGroup": "用户流程",
+      "controllers": [
+        {"type": "TransactionController", "name": "下单-支付-上传", "includeTimers": true}
+      ],
+      "configElements": [
+        {"type": "HeaderManager", "headers": [{"key": "Content-Type", "value": "application/json"}]}
+      ],
+      "dataSources": [
+        {"type": "CSVDataSet", "file": "users.csv", "vars": ["user", "pwd", "secret"], "delimiter": ","},
+        {"type": "CounterConfig", "variable": "counter", "start": 1, "increment": 1, "end": 999999, "format": "000000", "perUser": false}
+      ],
+      "timers": [
+        {"type": "UniformRandomTimer", "rangeMs": [500, 2000]}
+      ],
+      "steps": [
+        {
+          "type": "HTTPSamplerProxy",
+          "name": "下单",
+          "method": "POST",
+          "path": "/api/order",
+          "body": "{\"user\": \"${user}\", \"counter\": \"${counter}\"}",
+          "headers": [{"key": "Authorization", "value": "Bearer ${token}"}],
+          "preProcessors": [
+            {"type": "JSR223PreProcessor", "name": "生成签名", "language": "groovy", "script": "vars.put('requestBody', '{\"user\":\"' + vars.get('user') + '\"}')", "cacheKey": true}
+          ],
+          "extractors": [
+            {"type": "RegexExtractor", "variable": "orderId", "regex": "orderId\":\"([^\"]+)\"", "template": "$1$", "defaultValue": "NOT_FOUND"},
+            {"type": "JSONExtractor", "variable": "orderStatus", "path": "$.data.status", "defaultValue": "NOT_FOUND"}
+          ],
+          "assertions": [
+            {"type": "ResponseAssertion", "pattern": "200", "field": "16", "test_type": 8},
+            {"type": "DurationAssertion", "maxMs": 3000}
+          ]
+        },
+        {
+          "type": "HTTPSamplerProxy",
+          "name": "支付",
+          "method": "POST",
+          "path": "/api/pay",
+          "body": "{\"orderId\": \"${orderId}\"}",
+          "headers": [{"key": "Authorization", "value": "Bearer ${token}"}],
+          "extractors": [
+            {"type": "JSONExtractor", "variable": "payToken", "path": "$.data.token", "defaultValue": "NOT_FOUND"}
+          ]
+        },
+        {
+          "type": "HTTPSamplerProxy",
+          "name": "上传报告",
+          "method": "POST",
+          "path": "/api/upload",
+          "multipart": true,
+          "fileUploads": [{"paramName": "file", "filePath": "/data/${orderId}.csv", "mimeType": "text/csv"}],
+          "headers": [{"key": "Authorization", "value": "Bearer ${payToken}"}]
+        }
+      ]
+    }
+  ],
+  "listeners": [
+    {"type": "SummaryReport"},
+    {"type": "SimpleDataWriter", "file": "results.jtl"}
+  ]
+}

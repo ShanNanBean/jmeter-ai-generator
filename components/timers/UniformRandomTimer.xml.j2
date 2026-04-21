@@ -1,0 +1,9 @@
+<UniformRandomTimer guiclass="UniformRandomTimerGui" testclass="UniformRandomTimer" testname="{{ name | default('Uniform Random Timer') }}" enabled="true">
+  {% if rangeMs is defined and rangeMs %}
+  <stringProp name="ConstantTimer.delay">{{ rangeMs[0] }}</stringProp>
+  <stringProp name="RandomTimer.range">{{ rangeMs[1] - rangeMs[0] }}</stringProp>
+  {% else %}
+  <stringProp name="ConstantTimer.delay">500</stringProp>
+  <stringProp name="RandomTimer.range">1500</stringProp>
+  {% endif %}
+</UniformRandomTimer>

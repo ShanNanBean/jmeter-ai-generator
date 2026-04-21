@@ -1,0 +1,12 @@
+<HeaderManager guiclass="HeaderPanel" testclass="HeaderManager" testname="{{ name | default('HTTP Header Manager') }}" enabled="true">
+  <collectionProp name="HeaderManager.headers">
+    {% if headers is defined and headers %}
+    {% for header in headers %}
+    <elementProp name="{{ header.key }}" elementType="Header">
+      <stringProp name="Header.name">{{ header.key }}</stringProp>
+      <stringProp name="Header.value">{{ header.value }}</stringProp>
+    </elementProp>
+    {% endfor %}
+    {% endif %}
+  </collectionProp>
+</HeaderManager>

@@ -1,0 +1,8 @@
+<TCPSampler guiclass="TCPSamplerGui" testclass="TCPSampler" testname="{{ name }}" enabled="true">
+  <stringProp name="TCPSampler.server">{{ server | default('') }}</stringProp>
+  <stringProp name="TCPSampler.port">{{ port_tcp | default('') }}</stringProp>
+  <stringProp name="TCPSampler.classname">{{ classname | default('org.apache.jmeter.protocol.tcp.sampler.TCPClientImpl') }}</stringProp>
+  <stringProp name="TCPSampler.reuseConnection">true</stringProp>
+  <stringProp name="TCPSampler.closeConnection">false</stringProp>
+  <boolProp name="TCPSampler.setNoDelay">false</boolProp>
+</TCPSampler>

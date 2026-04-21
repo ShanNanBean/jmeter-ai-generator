@@ -1,0 +1,49 @@
+{
+  "testPlan": {
+    "name": "简单登录接口压测",
+    "variables": [{"key": "base_url", "value": "https://api.example.com"}]
+  },
+  "threadGroups": [
+    {
+      "name": "用户组",
+      "threads": 10,
+      "rampUp": 5,
+      "duration": 60,
+      "loop": -1
+    }
+  ],
+  "scenarios": [
+    {
+      "name": "登录流程",
+      "threadGroup": "用户组",
+      "dataSources": [
+        {"type": "CSVDataSet", "file": "users.csv", "vars": ["user", "pwd"]}
+      ],
+      "timers": [
+        {"type": "UniformRandomTimer", "rangeMs": [500, 2000]}
+      ],
+      "steps": [
+        {
+          "type": "HTTPSamplerProxy",
+          "name": "登录请求",
+          "method": "POST",
+          "domain": "${base_url}",
+          "path": "/api/login",
+          "body": "{\"username\": \"${user}\", \"password\": \"${pwd}\"}",
+          "headers": [{"key": "Content-Type", "value": "application/json"}],
+          "assertions": [
+            {"type": "ResponseAssertion", "pattern": "200", "field": "16", "test_type": 8},
+            {"type": "DurationAssertion", "maxMs": 2000}
+          ],
+          "extractors": [
+            {"type": "JSONExtractor", "variable": "token", "path": "$.data.token", "defaultValue": "NOT_FOUND"}
+          ]
+        }
+      ]
+    }
+  ],
+  "listeners": [
+    {"type": "SummaryReport"},
+    {"type": "SimpleDataWriter", "file": "results.jtl"}
+  ]
+}

@@ -1,0 +1,79 @@
+{
+  "testPlan": {
+    "name": "多步骤业务流程压测",
+    "variables": [{"key": "base_url", "value": "https://api.example.com"}]
+  },
+  "threadGroups": [
+    {
+      "name": "用户流程",
+      "threads": 50,
+      "rampUp": 10,
+      "duration": 300,
+      "loop": -1
+    }
+  ],
+  "scenarios": [
+    {
+      "name": "登录-查询-下单流程",
+      "threadGroup": "用户流程",
+      "controllers": [
+        {"type": "TransactionController", "name": "完整业务流程", "includeTimers": false}
+      ],
+      "dataSources": [
+        {"type": "CSVDataSet", "file": "users.csv", "vars": ["user", "pwd"]}
+      ],
+      "timers": [
+        {"type": "UniformRandomTimer", "rangeMs": [500, 2000]}
+      ],
+      "steps": [
+        {
+          "type": "HTTPSamplerProxy",
+          "name": "登录",
+          "method": "POST",
+          "path": "/api/login",
+          "body": "{\"username\": \"${user}\", \"password\": \"${pwd}\"}",
+          "headers": [{"key": "Content-Type", "value": "application/json"}],
+          "assertions": [
+            {"type": "ResponseAssertion", "pattern": "200", "field": "16", "test_type": 8}
+          ],
+          "extractors": [
+            {"type": "JSONExtractor", "variable": "token", "path": "$.data.token"}
+          ]
+        },
+        {
+          "type": "HTTPSamplerProxy",
+          "name": "查询商品",
+          "method": "GET",
+          "path": "/api/products?page=1&size=20",
+          "headers": [{"key": "Authorization", "value": "Bearer ${token}"}],
+          "extractors": [
+            {"type": "JSONExtractor", "variable": "productId", "path": "$.data.items[0].id"}
+          ]
+        },
+        {
+          "type": "HTTPSamplerProxy",
+          "name": "创建订单",
+          "method": "POST",
+          "path": "/api/order",
+          "body": "{\"productId\": \"${productId}\"}",
+          "headers": [
+            {"key": "Content-Type", "value": "application/json"},
+            {"key": "Authorization", "value": "Bearer ${token}"}
+          ],
+          "assertions": [
+            {"type": "ResponseAssertion", "pattern": "200", "field": "16", "test_type": 8},
+            {"type": "DurationAssertion", "maxMs": 3000}
+          ],
+          "extractors": [
+            {"type": "RegexExtractor", "variable": "orderId", "regex": "orderId\":\"([^\"]+)\"", "template": "$1$"}
+          ]
+        }
+      ]
+    }
+  ],
+  "listeners": [
+    {"type": "SummaryReport"},
+    {"type": "AggregateReport"},
+    {"type": "SimpleDataWriter", "file": "results.jtl"}
+  ]
+}

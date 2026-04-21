@@ -1,0 +1,18 @@
+# JMeter AI Generator 全局设置
+app:
+  name: "JMeter AI Generator"
+  version: "0.1.0"
+  debug: true
+
+defaults:
+  threads: 10
+  ramp_up: 5
+  duration: 60
+  loop: -1
+  protocol: "https"
+  think_time_range: [500, 2000]  # ms
+
+llm:
+  default_provider: "claude"
+  temperature: 0.3
+  max_tokens: 4096

@@ -1,0 +1,220 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "JMeter IR Document",
+  "description": "Intermediate Representation for JMeter test plans",
+  "type": "object",
+  "required": ["testPlan", "threadGroups", "scenarios"],
+  "properties": {
+    "testPlan": {
+      "type": "object",
+      "required": ["name"],
+      "properties": {
+        "name": { "type": "string" },
+        "variables": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["key", "value"],
+            "properties": {
+              "key": { "type": "string" },
+              "value": { "type": "string" }
+            }
+          }
+        },
+        "serializeThreadGroups": { "type": "boolean", "default": false }
+      }
+    },
+    "threadGroups": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "threads", "rampUp"],
+        "properties": {
+          "name": { "type": "string" },
+          "threads": { "type": "integer", "default": 10 },
+          "rampUp": { "type": "integer", "default": 5 },
+          "duration": { "type": "integer" },
+          "loop": { "type": "integer", "default": -1 },
+          "delay": { "type": "integer" },
+          "onSampleError": { "type": "string", "default": "continue" },
+          "sameUserOnNextIteration": { "type": "boolean", "default": true }
+        }
+      }
+    },
+    "scenarios": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "threadGroup", "steps"],
+        "properties": {
+          "name": { "type": "string" },
+          "threadGroup": { "type": "string" },
+          "controllers": { "type": "array", "items": { "$ref": "#/definitions/controller" } },
+          "configElements": { "type": "array", "items": { "$ref": "#/definitions/configElement" } },
+          "dataSources": { "type": "array", "items": { "$ref": "#/definitions/dataSource" } },
+          "timers": { "type": "array", "items": { "$ref": "#/definitions/timer" } },
+          "steps": { "type": "array", "items": { "$ref": "#/definitions/step" } }
+        }
+      }
+    },
+    "listeners": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["type"],
+        "properties": {
+          "type": { "type": "string" },
+          "name": { "type": "string" },
+          "file": { "type": "string" }
+        }
+      }
+    },
+    "configElements": {
+      "type": "array",
+      "items": { "$ref": "#/definitions/configElement" }
+    }
+  },
+  "definitions": {
+    "step": {
+      "type": "object",
+      "required": ["type", "name"],
+      "properties": {
+        "type": { "type": "string", "enum": ["HTTPSamplerProxy", "JDBCSampler", "TCPSampler"] },
+        "name": { "type": "string" },
+        "method": { "type": "string", "enum": ["GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS"], "default": "GET" },
+        "domain": { "type": "string" },
+        "port": { "type": "integer" },
+        "protocol": { "type": "string" },
+        "path": { "type": "string" },
+        "body": { "type": "string" },
+        "params": { "type": "array", "items": { "type": "object", "properties": { "name": { "type": "string" }, "value": { "type": "string" } } } },
+        "headers": { "type": "array", "items": { "type": "object", "properties": { "key": { "type": "string" }, "value": { "type": "string" } } } },
+        "connectTimeout": { "type": "integer" },
+        "responseTimeout": { "type": "integer" },
+        "followRedirects": { "type": "boolean", "default": true },
+        "useKeepalive": { "type": "boolean", "default": true },
+        "multipart": { "type": "boolean", "default": false },
+        "fileUploads": { "type": "array", "items": { "type": "object", "properties": { "paramName": { "type": "string" }, "filePath": { "type": "string" }, "mimeType": { "type": "string" } } } },
+        "dataSource": { "type": "string" },
+        "query": { "type": "string" },
+        "queryType": { "type": "string" },
+        "server": { "type": "string" },
+        "port_tcp": { "type": "integer" },
+        "classname": { "type": "string" },
+        "assertions": { "type": "array", "items": { "$ref": "#/definitions/assertion" } },
+        "extractors": { "type": "array", "items": { "$ref": "#/definitions/extractor" } },
+        "timers": { "type": "array", "items": { "$ref": "#/definitions/timer" } },
+        "preProcessors": { "type": "array", "items": { "$ref": "#/definitions/processor" } },
+        "postProcessors": { "type": "array", "items": { "$ref": "#/definitions/processor" } }
+      }
+    },
+    "assertion": {
+      "type": "object",
+      "required": ["type"],
+      "properties": {
+        "type": { "type": "string", "enum": ["ResponseAssertion", "DurationAssertion", "SizeAssertion", "JSONAssertion"] },
+        "name": { "type": "string" },
+        "pattern": { "type": "string" },
+        "field": { "type": "string" },
+        "test_type": { "type": "integer" },
+        "maxMs": { "type": "integer" },
+        "maxSize": { "type": "integer" },
+        "minSize": { "type": "integer" },
+        "jsonPath": { "type": "string" },
+        "expectedValue": { "type": "string" }
+      }
+    },
+    "extractor": {
+      "type": "object",
+      "required": ["type", "variable"],
+      "properties": {
+        "type": { "type": "string", "enum": ["JSONExtractor", "RegexExtractor", "CSSExtractor"] },
+        "variable": { "type": "string" },
+        "path": { "type": "string" },
+        "defaultValue": { "type": "string", "default": "NOT_FOUND" },
+        "matchNo": { "type": "integer", "default": 0 },
+        "regex": { "type": "string" },
+        "template": { "type": "string", "default": "$1$" },
+        "expression": { "type": "string" },
+        "attribute": { "type": "string" }
+      }
+    },
+    "timer": {
+      "type": "object",
+      "required": ["type"],
+      "properties": {
+        "type": { "type": "string", "enum": ["ConstantTimer", "UniformRandomTimer", "GaussianRandomTimer"] },
+        "delayMs": { "type": "integer" },
+        "rangeMs": { "type": "array", "items": { "type": "integer" }, "minItems": 2, "maxItems": 2 },
+        "meanMs": { "type": "integer" },
+        "deviationMs": { "type": "integer" }
+      }
+    },
+    "dataSource": {
+      "type": "object",
+      "required": ["type"],
+      "properties": {
+        "type": { "type": "string", "enum": ["CSVDataSet", "CounterConfig", "UserParameters"] },
+        "file": { "type": "string" },
+        "vars": { "type": "array", "items": { "type": "string" } },
+        "delimiter": { "type": "string", "default": "," },
+        "recycle": { "type": "boolean", "default": true },
+        "stopThread": { "type": "boolean", "default": false },
+        "variable": { "type": "string" },
+        "start": { "type": "integer", "default": 1 },
+        "increment": { "type": "integer", "default": 1 },
+        "end": { "type": "integer" },
+        "format": { "type": "string" },
+        "perUser": { "type": "boolean", "default": false },
+        "parameters": { "type": "array", "items": { "type": "object" } }
+      }
+    },
+    "processor": {
+      "type": "object",
+      "required": ["type"],
+      "properties": {
+        "type": { "type": "string", "enum": ["JSR223PreProcessor", "JSR223PostProcessor"] },
+        "name": { "type": "string" },
+        "language": { "type": "string", "default": "groovy" },
+        "script": { "type": "string" },
+        "cacheKey": { "type": "boolean", "default": true }
+      }
+    },
+    "controller": {
+      "type": "object",
+      "required": ["type", "name"],
+      "properties": {
+        "type": { "type": "string", "enum": ["LoopController", "IfController", "WhileController", "TransactionController", "ForEachController"] },
+        "name": { "type": "string" },
+        "loops": { "type": "integer" },
+        "condition": { "type": "string" },
+        "evaluateAll": { "type": "boolean", "default": false },
+        "whileCondition": { "type": "string" },
+        "includeTimers": { "type": "boolean", "default": false },
+        "inputVar": { "type": "string" },
+        "outputVar": { "type": "string" },
+        "separator": { "type": "string", "default": "_" }
+      }
+    },
+    "configElement": {
+      "type": "object",
+      "required": ["type"],
+      "properties": {
+        "type": { "type": "string", "enum": ["HeaderManager", "CookieManager", "CacheManager"] },
+        "name": { "type": "string" },
+        "headers": { "type": "array", "items": { "type": "object", "properties": { "key": { "type": "string" }, "value": { "type": "string" } } } },
+        "clearEachIteration": { "type": "boolean", "default": false },
+        "useExpires": { "type": "boolean", "default": true }
+      }
+    },
+    "listener": {
+      "type": "object",
+      "required": ["type"],
+      "properties": {
+        "type": { "type": "string", "enum": ["SummaryReport", "SimpleDataWriter", "AggregateReport", "ViewResultsFullVisualizer"] },
+        "name": { "type": "string" },
+        "file": { "type": "string" }
+      }
+    }
+  }
+}

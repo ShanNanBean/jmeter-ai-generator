@@ -1,0 +1,8 @@
+<RegexExtractor guiclass="RegexExtractorGui" testclass="RegexExtractor" testname="{{ name | default('Regex Extractor') }}" enabled="true">
+  <stringProp name="RegexExtractor.useHeaders">false</stringProp>
+  <stringProp name="RegexExtractor.refname">{{ variable }}</stringProp>
+  <stringProp name="RegexExtractor.regex">{{ regex }}</stringProp>
+  <stringProp name="RegexExtractor.template">{{ template | default('$1$') }}</stringProp>
+  <stringProp name="RegexExtractor.match_number">{{ matchNo | default('1') }}</stringProp>
+  <stringProp name="RegexExtractor.default_value">{{ defaultValue | default('NOT_FOUND') }}</stringProp>
+</RegexExtractor>

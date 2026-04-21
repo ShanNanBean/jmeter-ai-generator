@@ -1,0 +1,4 @@
+<GaussianRandomTimer guiclass="GaussianRandomTimerGui" testclass="GaussianRandomTimer" testname="{{ name | default('Gaussian Random Timer') }}" enabled="true">
+  <stringProp name="ConstantTimer.delay">{{ meanMs | default('500') }}</stringProp>
+  <stringProp name="RandomTimer.range">{{ deviationMs | default('200') }}</stringProp>
+</GaussianRandomTimer>

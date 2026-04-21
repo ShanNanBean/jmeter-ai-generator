@@ -1,0 +1,23 @@
+default: claude
+
+providers:
+  claude:
+    type: anthropic
+    model: claude-sonnet-4-20250514
+    env_key: ANTHROPIC_API_KEY
+    kwargs:
+      timeout: 60
+
+  openai:
+    type: openai
+    model: gpt-4o
+    env_key: OPENAI_API_KEY
+    kwargs:
+      timeout: 60
+
+  # 支持 OpenAI-compatible API (如 DeepSeek, 本地模型等)
+  # deepseek:
+  #   type: openai
+  #   model: deepseek-chat
+  #   base_url: https://api.deepseek.com/v1
+  #   env_key: DEEPSEEK_API_KEY

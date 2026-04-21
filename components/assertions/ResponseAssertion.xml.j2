@@ -1,0 +1,11 @@
+<ResponseAssertion guiclass="AssertionGui" testclass="ResponseAssertion" testname="{{ name | default('Response Assertion') }}" enabled="true">
+  <collectionProp name="Asserion.test_strings">
+    {% if pattern is defined %}
+    <stringProp name="0">{{ pattern }}</stringProp>
+    {% endif %}
+  </collectionProp>
+  <stringProp name="Assertion.custom_message"></stringProp>
+  <stringProp name="Assertion.test_field">{{ field | default('16') }}</stringProp>
+  <boolProp name="Assertion.assume_success">false</boolProp>
+  <intProp name="Assertion.test_type">{{ test_type | default('8') }}</intProp>
+</ResponseAssertion>

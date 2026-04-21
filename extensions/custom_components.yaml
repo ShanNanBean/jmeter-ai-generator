@@ -1,0 +1,16 @@
+# 自定义组件扩展
+# 添加自定义 JMeter 插件组件，LLM 会自动注入这些描述到 prompt 中
+
+# 示例: Dubbo Sampler
+# - name: CustomDubboSampler
+#   guiclass: "DubboSampleGui"
+#   testclass: "DubboSample"
+#   template: "templates/DubboSampler.xml.j2"
+#   description: "Dubbo RPC 协议采样器"
+#   params:
+#     - name: "interface"
+#       required: true
+#     - name: "method"
+#       required: true
+#     - name: "version"
+#       default: "1.0.0"
