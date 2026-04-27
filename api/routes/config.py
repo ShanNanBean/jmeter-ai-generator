@@ -16,7 +16,7 @@ async def list_providers():
     registry = LLMProviderRegistry()
     providers = []
     config_path = "config/llm_providers.yaml"
-    with open(config_path) as f:
+    with open(config_path, encoding="utf-8") as f:
         config = yaml.safe_load(f)
 
     for name, prov in config.get("providers", {}).items():
@@ -33,6 +33,16 @@ async def list_components():
     """List available component templates."""
     registry = TemplateRegistry()
     return registry.list_available_types()
+
+
+@router.get("/jmeter-versions")
+async def list_jmeter_versions():
+    """List supported JMeter versions."""
+    config_path = os.path.join("config", "jmeter_versions.yaml")
+    with open(config_path, encoding="utf-8") as f:
+        config = yaml.safe_load(f)
+    versions = list(config.get("versions", {}).keys())
+    return {"default": config.get("default", "5.0"), "available": versions}
 
 
 @router.get("/status")

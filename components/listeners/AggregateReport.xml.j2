@@ -1,1 +1,4 @@
-<AggregateReport guiclass="StatVisualizer" testclass="AggregateReport" testname="{{ name | default('Aggregate Report') }}" enabled="true"/>
+<ResultCollector guiclass="StatVisualizer" testclass="ResultCollector" testname="{{ name | default('Aggregate Report') }}" enabled="true">
+  <boolProp name="ResultCollector.error_logging">false</boolProp>
+  <stringProp name="filename"></stringProp>
+</ResultCollector>

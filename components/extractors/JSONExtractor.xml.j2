@@ -1,6 +1,6 @@
-<JSONPathExtractor guiclass="JSONPathExtractorGui" testclass="JSONPathExtractor" testname="{{ name | default('JSON Extractor') }}" enabled="true">
-  <stringProp name="JSONPathExtractor.referenceNames">{{ variable }}</stringProp>
-  <stringProp name="JSONPathExtractor.jsonPathExprs">{{ path }}</stringProp>
-  <stringProp name="JSONPathExtractor.defaultValues">{{ defaultValue | default('NOT_FOUND') }}</stringProp>
-  <stringProp name="JSONPathExtractor.match_numbers">{{ matchNo | default('0') }}</stringProp>
-</JSONPathExtractor>
+<{{ tag }} guiclass="{{ guiclass }}" testclass="{{ testclass }}" testname="{{ name | default('JSON Extractor') }}" enabled="true">
+  <stringProp name="{{ prop_prefix }}.referenceNames">{{ variable }}</stringProp>
+  <stringProp name="{{ prop_prefix }}.jsonPathExprs">{{ path }}</stringProp>
+  <stringProp name="{{ prop_prefix }}.match_numbers">{{ matchNo | default('0') }}</stringProp>
+  <stringProp name="{{ prop_prefix }}.defaultValues">{{ defaultValue | default('NOT_FOUND') }}</stringProp>
+</{{ tag }}>

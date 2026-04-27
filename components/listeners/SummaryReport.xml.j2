@@ -1,1 +1,4 @@
-<SummaryReport guiclass="SummaryReportGui" testclass="SummaryReport" testname="{{ name | default('Summary Report') }}" enabled="true"/>
+<ResultCollector guiclass="SummaryReport" testclass="ResultCollector" testname="{{ name | default('Summary Report') }}" enabled="true">
+  <boolProp name="ResultCollector.error_logging">false</boolProp>
+  <stringProp name="filename"></stringProp>
+</ResultCollector>

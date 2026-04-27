@@ -19,17 +19,17 @@ class LLMParser:
         parts = []
         prompt_path = os.path.join("prompts", "system_prompt.md")
         if os.path.exists(prompt_path):
-            with open(prompt_path) as f:
+            with open(prompt_path, encoding="utf-8") as f:
                 parts.append(f.read())
 
         catalog_path = os.path.join("prompts", "component_catalog.md")
         if os.path.exists(catalog_path):
-            with open(catalog_path) as f:
+            with open(catalog_path, encoding="utf-8") as f:
                 parts.append("\n\n## Component Catalog\n" + f.read())
 
         schema_path = os.path.join("schemas", "ir_schema.json")
         if os.path.exists(schema_path):
-            with open(schema_path) as f:
+            with open(schema_path, encoding="utf-8") as f:
                 parts.append("\n\n## IR Schema\n" + f.read())
 
         return "\n".join(parts)
@@ -37,7 +37,7 @@ class LLMParser:
     def _build_preview_prompt(self) -> str:
         prompt_path = os.path.join("prompts", "preview_prompt.md")
         if os.path.exists(prompt_path):
-            with open(prompt_path) as f:
+            with open(prompt_path, encoding="utf-8") as f:
                 return f.read()
         return self._build_system_prompt()
 

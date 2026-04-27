@@ -3,6 +3,19 @@
     <h2 class="page-header">确认并编辑 IR</h2>
 
     <div class="page-section">
+      <div class="section-title">生成选项</div>
+      <div class="field-group">
+        <label>目标 JMeter 版本</label>
+        <select v-model="store.jmeterVersion">
+          <option value="4.0">JMeter 4.0</option>
+          <option value="5.0">JMeter 5.0+</option>
+          <option value="5.5">JMeter 5.5</option>
+          <option value="5.6">JMeter 5.6</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="page-section">
       <div class="section-title">测试计划</div>
       <div class="field-group">
         <label>计划名称</label>

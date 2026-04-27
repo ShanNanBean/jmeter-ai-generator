@@ -50,7 +50,8 @@ async def generate_jmx(request: GenerateRequest):
     _init_modules()
     try:
         ir_doc = IRDocument.model_validate(request.ir)
-        jmx_str = _assembler.assemble(ir_doc)
+        assembler = JMXAssembler(jmeter_version=request.jmeter_version)
+        jmx_str = assembler.assemble(ir_doc)
 
         validation_result = None
         if request.run_validation:

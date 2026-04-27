@@ -10,6 +10,7 @@ export const useGenerationStore = defineStore('generation', () => {
   const status = ref<'idle' | 'parsing' | 'generating' | 'error'>('idle');
   const error = ref<string>('');
   const llmUsage = ref<any>(null);
+  const jmeterVersion = ref<string>('5.0');
 
   async function parse(userInput: string, mode: string = 'natural', provider?: string) {
     status.value = 'parsing';
@@ -32,7 +33,7 @@ export const useGenerationStore = defineStore('generation', () => {
     status.value = 'generating';
     error.value = '';
     try {
-      const result = await generateJMX(ir.value, validate);
+      const result = await generateJMX(ir.value, validate, jmeterVersion.value);
       jmx.value = result.jmx;
       filename.value = result.filename;
       validation.value = result.validation;
@@ -55,5 +56,5 @@ export const useGenerationStore = defineStore('generation', () => {
     llmUsage.value = null;
   }
 
-  return { ir, jmx, filename, validation, status, error, llmUsage, parse, generate, reset };
+  return { ir, jmx, filename, validation, status, error, llmUsage, jmeterVersion, parse, generate, reset };
 });

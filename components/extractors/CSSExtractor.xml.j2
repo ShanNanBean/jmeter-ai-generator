@@ -1,7 +1,7 @@
-<CSSExtractor guiclass="CssExtractorGui" testclass="CSSExtractor" testname="{{ name | default('CSS/JQuery Extractor') }}" enabled="true">
-  <stringProp name="CSSExtractor.refname">{{ variable }}</stringProp>
-  <stringProp name="CSSExtractor.expr">{{ expression }}</stringProp>
-  <stringProp name="CSSExtractor.attribute">{{ attribute | default('') }}</stringProp>
-  <stringProp name="CSSExtractor.default_value">{{ defaultValue | default('NOT_FOUND') }}</stringProp>
-  <stringProp name="CSSExtractor.match_number">{{ matchNo | default('0') }}</stringProp>
-</CSSExtractor>
+<{{ tag }} guiclass="{{ guiclass }}" testclass="{{ testclass }}" testname="{{ name | default('CSS/JQuery Extractor') }}" enabled="true">
+  <stringProp name="{{ prop_prefix }}.refname">{{ variable }}</stringProp>
+  <stringProp name="{{ prop_prefix }}.expression">{{ expression }}</stringProp>
+  <stringProp name="{{ prop_prefix }}.attribute">{{ attribute | default('') }}</stringProp>
+  <stringProp name="{{ prop_prefix }}.default">{{ defaultValue | default('NOT_FOUND') }}</stringProp>
+  <stringProp name="{{ prop_prefix }}.match_number">{{ matchNo | default('0') }}</stringProp>
+</{{ tag }}>

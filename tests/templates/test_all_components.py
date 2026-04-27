@@ -70,6 +70,16 @@ def test_template_renders_valid_xml(component_type):
     template = env.get_template(template_path)
 
     context = _minimal_context(component_type)
+
+    # Inject version-specific variables for version-sensitive templates
+    from core.assembler import DEFAULT_CLASS_MAPPINGS, VERSION_SENSITIVE_TYPES
+    if component_type in VERSION_SENSITIVE_TYPES:
+        mapping = DEFAULT_CLASS_MAPPINGS.get(component_type, {})
+        context["tag"] = mapping.get("tag", component_type)
+        context["guiclass"] = mapping.get("guiclass", component_type + "Gui")
+        context["testclass"] = mapping.get("testclass", component_type)
+        context["prop_prefix"] = mapping.get("prop_prefix", component_type)
+
     rendered = template.render(**context)
 
     # Must be parseable XML
@@ -82,10 +92,16 @@ def test_template_renders_valid_xml(component_type):
     testclass = elem.get("testclass", "")
     if testclass:
         # Some JMeter components have different class names vs IR names
-        # e.g., JSONExtractor -> JSONPathExtractor, JSONAssertion -> JSONPathAssertion
+        # e.g., JSONExtractor -> json.JSONPostProcessor, CSSExtractor -> CssSelectorExtractor
+        # All listeners use ResultCollector as testclass
         known_mappings = {
-            "JSONExtractor": "JSONPathExtractor",
+            "JSONExtractor": "JSONPostProcessor",
             "JSONAssertion": "JSONPathAssertion",
+            "CSSExtractor": "HtmlExtractor",
+            "SummaryReport": "ResultCollector",
+            "SimpleDataWriter": "ResultCollector",
+            "AggregateReport": "ResultCollector",
+            "ViewResultsFullVisualizer": "ResultCollector",
         }
         expected_testclass = known_mappings.get(component_type, component_type)
         # Verify testclass matches (case-insensitive substring check)

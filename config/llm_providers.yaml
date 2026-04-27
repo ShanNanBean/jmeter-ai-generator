@@ -1,17 +1,18 @@
-default: claude
+default: qwen
 
 providers:
-  claude:
-    type: anthropic
-    model: claude-sonnet-4-20250514
-    env_key: ANTHROPIC_API_KEY
-    kwargs:
-      timeout: 60
+  # claude:
+  #   type: anthropic
+  #   model: claude-sonnet-4-20250514
+  #   env_key: ANTHROPIC_API_KEY
+  #   kwargs:
+  #     timeout: 60
 
-  openai:
+  qwen:
     type: openai
-    model: gpt-4o
-    env_key: OPENAI_API_KEY
+    model: qwen-plus
+    api_key: sk-f4799622320c420685a76bbccb67625d
+    base_url: https://dashscope.aliyuncs.com/compatible-mode/v1
     kwargs:
       timeout: 60
 

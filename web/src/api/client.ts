@@ -10,11 +10,11 @@ export async function parseInput(userInput: string, mode: string = 'natural', pr
   return response.json();
 }
 
-export async function generateJMX(ir: any, validate: boolean = true) {
+export async function generateJMX(ir: any, validate: boolean = true, jmeterVersion: string = '5.0') {
   const response = await fetch(`${API_BASE}/generation/generate`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ ir, validate }),
+    body: JSON.stringify({ ir, validate, jmeter_version: jmeterVersion }),
   });
   if (!response.ok) throw new Error(`Generate failed: ${response.statusText}`);
   return response.json();
@@ -69,6 +69,12 @@ export async function getProviders() {
 export async function getComponents() {
   const response = await fetch(`${API_BASE}/config/components`);
   if (!response.ok) throw new Error(`Get components failed: ${response.statusText}`);
+  return response.json();
+}
+
+export async function getJmeterVersions() {
+  const response = await fetch(`${API_BASE}/config/jmeter-versions`);
+  if (!response.ok) throw new Error(`Get versions failed: ${response.statusText}`);
   return response.json();
 }
 

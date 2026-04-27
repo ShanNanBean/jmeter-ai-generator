@@ -21,6 +21,7 @@ class ParseResponse(BaseModel):
 class GenerateRequest(BaseModel):
     ir: Dict[str, Any]
     run_validation: bool = True
+    jmeter_version: Optional[str] = "5.0"
 
 
 class GenerateResponse(BaseModel):
@@ -39,6 +40,7 @@ class PreviewResponse(BaseModel):
     preview_text: str
     dependency_issues: List[str]
     thread_params: Optional[Dict[str, Any]] = None
+    ir: Optional[Dict[str, Any]] = None
 
 
 class UpdatePreviewRequest(BaseModel):

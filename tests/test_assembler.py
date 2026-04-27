@@ -51,40 +51,51 @@ def test_assemble_simple_ir():
     root = ET.fromstring(jmx)
     assert root.tag == "jmeterTestPlan"
 
-    # Must contain TestPlan
-    testplans = root.findall("TestPlan")
+    # Structure: jmeterTestPlan > hashTree > TestPlan + hashTree(sibling)
+    top_hash = root.find("hashTree")
+    assert top_hash is not None
+
+    # Must contain TestPlan as child of top hashTree
+    testplans = top_hash.findall("TestPlan")
     assert len(testplans) == 1
     assert testplans[0].get("testname") == "简单测试"
 
-    # TestPlan must have hashTree child
-    hash_trees = testplans[0].findall("hashTree")
-    assert len(hash_trees) >= 1
-
-    # hashTree must contain ThreadGroup
-    plan_ht = hash_trees[0]
+    # TestPlan's sibling hashTree must contain ThreadGroup
+    # In JMeter format: hashTree children are TestPlan followed by hashTree(sibling)
+    plan_ht = top_hash.findall("hashTree")[0]
     thread_groups = plan_ht.findall("ThreadGroup")
     assert len(thread_groups) == 1
     assert thread_groups[0].get("testname") == "用户组"
 
 
-def test_assemble_has_htree_nesting():
-    """Test that every TestElement has a hashTree child."""
+def test_assemble_has_htree_sibling_nesting():
+    """Test that every TestElement has a hashTree sibling within the parent hashTree.
+
+    JMeter requires hashTree to be a SIBLING of the TestElement,
+    both direct children of the parent hashTree.
+    """
     assembler = _get_assembler()
     ir = _simple_ir()
     jmx = assembler.assemble(ir)
 
     root = ET.fromstring(jmx)
-    # Check ThreadGroup has hashTree child
-    tg = root.find(".//ThreadGroup")
-    assert tg is not None
-    ht = tg.find("hashTree")
-    assert ht is not None
 
-    # Check HTTPSamplerProxy has hashTree child
-    sampler = root.find(".//HTTPSamplerProxy")
-    assert sampler is not None
-    ht2 = sampler.find("hashTree")
-    assert ht2 is not None
+    # Verify the sibling pattern: each TestElement is followed by a hashTree
+    # at the same level within its parent hashTree.
+    # Check ThreadGroup has a sibling hashTree inside plan hashTree
+    plan_ht = root.find("hashTree/hashTree")
+    assert plan_ht is not None
+    children = list(plan_ht)
+    # Children should alternate: TestElement, hashTree, TestElement, hashTree, ...
+    tg_idx = next(i for i, c in enumerate(children) if c.tag == "ThreadGroup")
+    # Next sibling must be hashTree
+    assert children[tg_idx + 1].tag == "hashTree"
+
+    # Check HTTPSamplerProxy has a sibling hashTree inside TG hashTree
+    tg_ht = children[tg_idx + 1]
+    sampler_idx = next(i for i, c in enumerate(list(tg_ht)) if c.tag == "HTTPSamplerProxy")
+    sampler_children = list(tg_ht)
+    assert sampler_children[sampler_idx + 1].tag == "hashTree"
 
 
 def test_assemble_with_fixture():

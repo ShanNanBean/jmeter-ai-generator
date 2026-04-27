@@ -1,8 +1,15 @@
 """IR (Intermediate Representation) data models for JMeter test plans."""
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from typing import Optional, List, Dict, Any
 from enum import Enum
+
+
+def _coerce_empty_str_to_none(v):
+    """Coerce empty strings to None — LLMs often return '' for optional int fields."""
+    if v == "" or v == "null":
+        return None
+    return v
 
 
 class ComponentType(str, Enum):
@@ -58,6 +65,11 @@ class AssertionModel(BaseModel):
     jsonPath: Optional[str] = None
     expectedValue: Optional[str] = None
 
+    @field_validator("test_type", "maxMs", "maxSize", "minSize", mode="before")
+    @classmethod
+    def coerce_optional_int(cls, v):
+        return _coerce_empty_str_to_none(v)
+
 
 class ExtractorModel(BaseModel):
     type: ComponentType
@@ -73,6 +85,11 @@ class ExtractorModel(BaseModel):
     expression: Optional[str] = None
     attribute: Optional[str] = None
 
+    @field_validator("matchNo", mode="before")
+    @classmethod
+    def coerce_optional_int(cls, v):
+        return _coerce_empty_str_to_none(v)
+
 
 class TimerModel(BaseModel):
     type: ComponentType
@@ -83,6 +100,11 @@ class TimerModel(BaseModel):
     # GaussianRandomTimer
     meanMs: Optional[int] = None
     deviationMs: Optional[int] = None
+
+    @field_validator("delayMs", "meanMs", "deviationMs", mode="before")
+    @classmethod
+    def coerce_optional_int(cls, v):
+        return _coerce_empty_str_to_none(v)
 
 
 class DataSourceModel(BaseModel):
@@ -103,6 +125,11 @@ class DataSourceModel(BaseModel):
     # UserParameters
     parameters: Optional[List[Dict[str, str]]] = None
 
+    @field_validator("start", "increment", "end", mode="before")
+    @classmethod
+    def coerce_optional_int(cls, v):
+        return _coerce_empty_str_to_none(v)
+
 
 class ProcessorModel(BaseModel):
     type: ComponentType
@@ -110,6 +137,15 @@ class ProcessorModel(BaseModel):
     language: Optional[str] = "groovy"
     script: Optional[str] = None
     cacheKey: Optional[bool] = True
+
+    @field_validator("cacheKey", mode="before")
+    @classmethod
+    def coerce_optional_bool(cls, v):
+        if v == "" or v == "null":
+            return None
+        if isinstance(v, str):
+            return v.lower() == "true"
+        return v
 
 
 class StepModel(BaseModel):
@@ -145,6 +181,20 @@ class StepModel(BaseModel):
     timers: Optional[List[TimerModel]] = None
     preProcessors: Optional[List[ProcessorModel]] = None
     postProcessors: Optional[List[ProcessorModel]] = None
+
+    @field_validator("port", "connectTimeout", "responseTimeout", "port_tcp", mode="before")
+    @classmethod
+    def coerce_optional_int(cls, v):
+        return _coerce_empty_str_to_none(v)
+
+    @field_validator("followRedirects", "useKeepalive", "multipart", mode="before")
+    @classmethod
+    def coerce_optional_bool(cls, v):
+        if v == "" or v == "null":
+            return None
+        if isinstance(v, str):
+            return v.lower() == "true"
+        return v
 
 
 class ControllerModel(BaseModel):
@@ -196,6 +246,20 @@ class ThreadGroupModel(BaseModel):
     delay: Optional[int] = None
     onSampleError: Optional[str] = "continue"
     sameUserOnNextIteration: Optional[bool] = True
+
+    @field_validator("duration", "loop", "delay", mode="before")
+    @classmethod
+    def coerce_optional_int(cls, v):
+        return _coerce_empty_str_to_none(v)
+
+    @field_validator("sameUserOnNextIteration", mode="before")
+    @classmethod
+    def coerce_optional_bool(cls, v):
+        if v == "" or v == "null":
+            return None
+        if isinstance(v, str):
+            return v.lower() == "true"
+        return v
 
 
 class VariableModel(BaseModel):

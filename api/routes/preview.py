@@ -51,12 +51,14 @@ async def update_preview(request: UpdatePreviewRequest):
     _init_modules()
     try:
         ir_doc = IRDocument.model_validate(request.ir)
-        new_ir, _ = await _parser.update_ir_with_feedback(
+        new_ir, llm_response = await _parser.update_ir_with_feedback(
             ir=ir_doc,
             feedback=request.feedback,
             provider_name=request.provider,
             temperature=request.temperature,
         )
+
+        new_ir_dict = new_ir.model_dump()
 
         preview_text = _preview_gen.generate(new_ir)
         dep_checker = DependencyChecker()
@@ -65,8 +67,11 @@ async def update_preview(request: UpdatePreviewRequest):
         return PreviewResponse(
             preview_text=preview_text,
             dependency_issues=dep_issues,
+            ir=new_ir_dict,
         )
     except Exception as e:
+        import traceback
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
 
 

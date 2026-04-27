@@ -1,0 +1,53 @@
+# JMeter version compatibility configuration
+# Controls class names, property names, and XML structure for different JMeter versions
+
+default: "5.0"
+
+# Class mappings for version-sensitive components.
+# Only components whose class names differ between versions are listed here.
+# Versions inherit mappings from the base "5.0" version — empty mappings means same as 5.0.
+versions:
+  "4.0":
+    jmeter: "4.0"
+    properties: "4.0"
+    class_mappings:
+      JSONExtractor:
+        tag: "com.atlantbh.jmeter.JsonPathExtractor"
+        guiclass: "com.atlantbh.jmeter.JsonPathExtractorGui"
+        testclass: "com.atlantbh.jmeter.JsonPathExtractor"
+        prop_prefix: "JSONPathExtractor"
+      CSSExtractor:
+        tag: "HtmlExtractor"
+        guiclass: "HtmlExtractorGui"
+        testclass: "HtmlExtractor"
+        prop_prefix: "HtmlExtractor"
+
+  "5.0":
+    jmeter: "5.0"
+    properties: "5.0"
+    class_mappings:
+      JSONExtractor:
+        tag: "JSONPostProcessor"
+        guiclass: "JSONPostProcessorGui"
+        testclass: "JSONPostProcessor"
+        prop_prefix: "JSONPostProcessor"
+      CSSExtractor:
+        tag: "HtmlExtractor"
+        guiclass: "HtmlExtractorGui"
+        testclass: "HtmlExtractor"
+        prop_prefix: "HtmlExtractor"
+      JSONAssertion:
+        tag: "JSONPathAssertion"
+        guiclass: "JSONPathAssertionGui"
+        testclass: "JSONPathAssertion"
+        prop_prefix: "JSONPathAssertion"
+
+  "5.5":
+    jmeter: "5.5"
+    properties: "5.0"
+    class_mappings: {}
+
+  "5.6":
+    jmeter: "5.6.3"
+    properties: "5.0"
+    class_mappings: {}
