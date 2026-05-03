@@ -11,7 +11,7 @@ providers:
   qwen:
     type: openai
     model: qwen-plus
-    api_key: sk-f4799622320c420685a76bbccb67625d
+    api_key: *****
     base_url: https://dashscope.aliyuncs.com/compatible-mode/v1
     kwargs:
       timeout: 60
