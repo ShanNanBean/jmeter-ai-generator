@@ -1,0 +1,30 @@
+default: qwen
+
+providers:
+  # Claude API 示例
+  # claude:
+  #   type: anthropic
+  #   model: claude-sonnet-4-20250514
+  #   api_key: your-anthropic-api-key
+  #   # 也可以不写 api_key，改用环境变量：
+  #   # env_key: ANTHROPIC_API_KEY
+  #   kwargs:
+  #     timeout: 60
+
+  # DashScope / Qwen OpenAI-compatible API 示例
+  qwen:
+    type: openai
+    model: qwen-plus
+    api_key: your-dashscope-api-key
+    base_url: https://dashscope.aliyuncs.com/compatible-mode/v1
+    kwargs:
+      timeout: 60
+
+  # DeepSeek OpenAI-compatible API 示例
+  # deepseek:
+  #   type: openai
+  #   model: deepseek-chat
+  #   api_key: your-deepseek-api-key
+  #   base_url: https://api.deepseek.com/v1
+  #   kwargs:
+  #     timeout: 60

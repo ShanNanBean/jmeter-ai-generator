@@ -2,11 +2,11 @@
 
 import json
 import re
-import os
 from typing import Optional, Tuple
 
 from core.llm_adapter import LLMProviderRegistry, LLMResponse
 from core.ir_model import IRDocument
+from core.path_config import PROMPTS_DIR, SCHEMAS_DIR
 
 
 class LLMParser:
@@ -15,33 +15,29 @@ class LLMParser:
     def __init__(self, registry: LLMProviderRegistry):
         self.registry = registry
 
-    def _build_system_prompt(self) -> str:
+    def build_system_prompt(self) -> str:
         parts = []
-        prompt_path = os.path.join("prompts", "system_prompt.md")
-        if os.path.exists(prompt_path):
-            with open(prompt_path, encoding="utf-8") as f:
-                parts.append(f.read())
+        prompt_path = PROMPTS_DIR / "system_prompt.md"
+        if prompt_path.exists():
+            parts.append(prompt_path.read_text(encoding="utf-8"))
 
-        catalog_path = os.path.join("prompts", "component_catalog.md")
-        if os.path.exists(catalog_path):
-            with open(catalog_path, encoding="utf-8") as f:
-                parts.append("\n\n## Component Catalog\n" + f.read())
+        catalog_path = PROMPTS_DIR / "component_catalog.md"
+        if catalog_path.exists():
+            parts.append("\n\n## Component Catalog\n" + catalog_path.read_text(encoding="utf-8"))
 
-        schema_path = os.path.join("schemas", "ir_schema.json")
-        if os.path.exists(schema_path):
-            with open(schema_path, encoding="utf-8") as f:
-                parts.append("\n\n## IR Schema\n" + f.read())
+        schema_path = SCHEMAS_DIR / "ir_schema.json"
+        if schema_path.exists():
+            parts.append("\n\n## IR Schema\n" + schema_path.read_text(encoding="utf-8"))
 
         return "\n".join(parts)
 
     def _build_preview_prompt(self) -> str:
-        prompt_path = os.path.join("prompts", "preview_prompt.md")
-        if os.path.exists(prompt_path):
-            with open(prompt_path, encoding="utf-8") as f:
-                return f.read()
-        return self._build_system_prompt()
+        prompt_path = PROMPTS_DIR / "preview_prompt.md"
+        if prompt_path.exists():
+            return prompt_path.read_text(encoding="utf-8")
+        return self.build_system_prompt()
 
-    def _build_user_prompt(self, user_input: str, mode: str = "natural") -> str:
+    def build_user_prompt(self, user_input: str, mode: str = "natural") -> str:
         if mode == "natural":
             return f"Parse the following test scenario description into IR JSON:\n\n{user_input}"
         elif mode == "semi_structured":
@@ -80,8 +76,8 @@ class LLMParser:
     ) -> Tuple[IRDocument, LLMResponse]:
         """Parse user input into an IRDocument via LLM."""
         provider = self.registry.get_provider(provider_name)
-        system_prompt = self._build_system_prompt()
-        user_prompt = self._build_user_prompt(user_input, mode)
+        system_prompt = self.build_system_prompt()
+        user_prompt = self.build_user_prompt(user_input, mode)
 
         response = await provider.generate(
             system_prompt=system_prompt,
@@ -104,7 +100,7 @@ class LLMParser:
     ) -> Tuple[IRDocument, LLMResponse]:
         """Modify IR based on user feedback via LLM."""
         provider = self.registry.get_provider(provider_name)
-        system_prompt = self._build_system_prompt()
+        system_prompt = self.build_system_prompt()
 
         ir_json = json.dumps(ir.model_dump(), indent=2, ensure_ascii=False)
         user_prompt = (

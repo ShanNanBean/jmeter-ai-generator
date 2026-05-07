@@ -26,7 +26,11 @@ class QPSDeriver:
         total_rt_ms = 0
         if scenario_steps:
             for step in scenario_steps:
-                name_lower = (step.name or "").lower()
+                if isinstance(step, dict):
+                    step_name = step.get("name", "")
+                else:
+                    step_name = getattr(step, "name", "")
+                name_lower = (step_name or "").lower()
                 estimated = self.RT_ESTIMATES["default"]
                 for key, rt in self.RT_ESTIMATES.items():
                     if key in name_lower:

@@ -10,6 +10,7 @@ from core.llm_parser import LLMParser
 from core.ir_model import IRDocument
 from core.scenario_preview import ScenarioPreviewGenerator
 from core.dependency_checker import DependencyChecker
+from core.sanity_checker import SanityChecker
 
 router = APIRouter()
 
@@ -36,10 +37,16 @@ async def generate_preview(request: PreviewRequest):
 
         dep_checker = DependencyChecker()
         dep_issues = dep_checker.check(ir_doc)
+        variable_chains = dep_checker.get_variable_chains(ir_doc)
+        sanity_warnings = SanityChecker().check(ir_doc)
+        plan_summary = _preview_gen.build_plan_summary(ir_doc)
 
         return PreviewResponse(
             preview_text=preview_text,
             dependency_issues=dep_issues,
+            plan_summary=plan_summary,
+            sanity_warnings=sanity_warnings,
+            variable_chains=variable_chains,
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -63,11 +70,17 @@ async def update_preview(request: UpdatePreviewRequest):
         preview_text = _preview_gen.generate(new_ir)
         dep_checker = DependencyChecker()
         dep_issues = dep_checker.check(new_ir)
+        variable_chains = dep_checker.get_variable_chains(new_ir)
+        sanity_warnings = SanityChecker().check(new_ir)
+        plan_summary = _preview_gen.build_plan_summary(new_ir)
 
         return PreviewResponse(
             preview_text=preview_text,
             dependency_issues=dep_issues,
             ir=new_ir_dict,
+            plan_summary=plan_summary,
+            sanity_warnings=sanity_warnings,
+            variable_chains=variable_chains,
         )
     except Exception as e:
         import traceback
@@ -82,6 +95,7 @@ async def dependency_check(request: DependencyCheckRequest):
         ir_doc = IRDocument.model_validate(request.ir)
         dep_checker = DependencyChecker()
         issues = dep_checker.check(ir_doc)
-        return DependencyCheckResponse(issues=issues)
+        variable_chains = dep_checker.get_variable_chains(ir_doc)
+        return DependencyCheckResponse(issues=issues, variable_chains=variable_chains)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

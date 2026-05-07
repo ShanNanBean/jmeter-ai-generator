@@ -1,5 +1,7 @@
 """Scenario Preview Generator — generates human-readable pseudo-script from IR."""
 
+from typing import Any, Dict, List
+
 from core.ir_model import IRDocument, StepModel
 from core.dependency_checker import DependencyChecker
 
@@ -16,30 +18,79 @@ class ScenarioPreviewGenerator:
         # Section 1: Header
         sections.append(self._header(ir))
 
-        # Section 2: Thread group params
+        # Section 2: Business explanation
+        sections.append(self._design_explanation(ir))
+
+        # Section 3: Thread group params
         sections.append(self._thread_params(ir))
 
-        # Section 3: Business flow
+        # Section 4: Business flow
         sections.append(self._flow(ir))
 
-        # Section 4: Data sources
+        # Section 5: Data sources
         sections.append(self._data_sources(ir))
 
-        # Section 5: Global config
+        # Section 6: Global config
         sections.append(self._global_config(ir))
 
-        # Section 6: Result collection
+        # Section 7: Result collection
         sections.append(self._listeners(ir))
 
-        # Section 7: Variable dependency check
+        # Section 8: Variable dependency check
         dep_issues = self.dep_checker.check(ir)
         sections.append(self._dependency_report(dep_issues))
 
         return "\n\n".join(sections)
 
+    def build_plan_summary(self, ir: IRDocument) -> Dict[str, Any]:
+        """Build structured summary used by the beginner-oriented preview UI."""
+        step_count = sum(len(scenario.steps or []) for scenario in ir.scenarios)
+        total_threads = sum(tg.threads for tg in ir.threadGroups)
+        durations = [tg.duration for tg in ir.threadGroups if tg.duration]
+        return {
+            "test_plan_name": ir.testPlan.name,
+            "thread_group_count": len(ir.threadGroups),
+            "scenario_count": len(ir.scenarios),
+            "step_count": step_count,
+            "total_threads": total_threads,
+            "duration_seconds": max(durations) if durations else None,
+            "thread_groups": [
+                {
+                    "name": tg.name,
+                    "threads": tg.threads,
+                    "rampUp": tg.rampUp,
+                    "duration": tg.duration,
+                    "loop": tg.loop,
+                    "scenario_count": sum(1 for scenario in ir.scenarios if scenario.threadGroup == tg.name),
+                }
+                for tg in ir.threadGroups
+            ],
+            "variable_chains": self.dep_checker.get_variable_chains(ir),
+        }
+
     def _header(self, ir: IRDocument) -> str:
         name = ir.testPlan.name
         return f"压测场景预览 — {name}\n{'=' * 50}"
+
+    def _design_explanation(self, ir: IRDocument) -> str:
+        lines = ["【为什么这样设计】"]
+        if ir.threadGroups:
+            total_threads = sum(tg.threads for tg in ir.threadGroups)
+            lines.append(f"  使用 {len(ir.threadGroups)} 个并发模型，共 {total_threads} 个虚拟用户，用来模拟业务访问压力。")
+            for tg in ir.threadGroups:
+                lines.append(f"  “{tg.name}”在 {tg.rampUp} 秒内逐步启动，避免所有用户同时涌入造成不真实尖峰。")
+                if tg.duration:
+                    lines.append(f"  持续运行 {tg.duration} 秒，用于观察吞吐、错误率和响应时间是否稳定。")
+                if tg.loop and tg.loop != -1:
+                    lines.append(f"  每个虚拟用户重复执行 {tg.loop} 轮业务流程。")
+        step_count = sum(len(scenario.steps or []) for scenario in ir.scenarios)
+        lines.append(f"  脚本包含 {len(ir.scenarios)} 条业务链路、{step_count} 个接口步骤，按接口依赖顺序执行。")
+        chains = self.dep_checker.get_variable_chains(ir)
+        if chains:
+            lines.append("  已识别动态参数传递链，例如登录 token、订单号等会从前置响应提取后给后续接口使用。")
+        has_timer = any(s.timers for s in ir.scenarios) or any(step.timers for s in ir.scenarios for step in s.steps)
+        lines.append("  已加入等待时间来模拟真实用户操作节奏。" if has_timer else "  当前未加入等待时间，更偏向接口极限压测；如需模拟真实用户，可在编辑页补充思考时间。")
+        return "\n".join(lines)
 
     def _thread_params(self, ir: IRDocument) -> str:
         lines = ["【压测参数设计】"]

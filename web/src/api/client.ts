@@ -1,85 +1,113 @@
-const API_BASE = '/api/v1';
+const API_BASE = import.meta.env.VITE_API_BASE || '/api/v1';
 
-export async function parseInput(userInput: string, mode: string = 'natural', provider?: string) {
-  const response = await fetch(`${API_BASE}/generation/parse`, {
+interface ApiFetchOptions extends RequestInit {
+  timeoutMs?: number;
+}
+
+async function apiFetch<T>(path: string, options: ApiFetchOptions = {}): Promise<T> {
+  const { timeoutMs = 30000, ...fetchOptions } = options;
+  const controller = new AbortController();
+  const timeoutId = window.setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    const response = await fetch(`${API_BASE}${path}`, {
+      ...fetchOptions,
+      signal: controller.signal,
+    });
+
+    if (!response.ok) {
+      let message = `${response.status} ${response.statusText}`;
+      try {
+        const data = await response.json();
+        if (data?.detail) message = typeof data.detail === 'string' ? data.detail : JSON.stringify(data.detail);
+      } catch {
+        // Keep HTTP status message when response is not JSON.
+      }
+      throw new Error(message);
+    }
+
+    return response.json();
+  } catch (error: any) {
+    if (error?.name === 'AbortError') {
+      throw new Error('请求超时，请稍后重试');
+    }
+    throw error;
+  } finally {
+    window.clearTimeout(timeoutId);
+  }
+}
+
+function post<T>(path: string, body: unknown, timeoutMs = 30000) {
+  return apiFetch<T>(path, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ user_input: userInput, mode, provider }),
+    body: JSON.stringify(body),
+    timeoutMs,
   });
-  if (!response.ok) throw new Error(`Parse failed: ${response.statusText}`);
-  return response.json();
+}
+
+export async function parseInput(
+  userInput: string,
+  mode: string = 'natural',
+  provider?: string,
+  temperature: number = 0.3,
+  options: { pressureGoal?: any; allowedPlugins?: string[]; parsePreference?: string } = {},
+) {
+  return post('/generation/parse', {
+    user_input: userInput,
+    mode,
+    provider,
+    temperature,
+    pressure_goal: options.pressureGoal,
+    allowed_plugins: options.allowedPlugins,
+    parse_preference: options.parsePreference,
+  }, 120000);
 }
 
 export async function generateJMX(ir: any, validate: boolean = true, jmeterVersion: string = '5.0') {
-  const response = await fetch(`${API_BASE}/generation/generate`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ ir, validate, jmeter_version: jmeterVersion }),
+  return post('/generation/generate', { ir, run_validation: validate, jmeter_version: jmeterVersion }, 60000);
+}
+
+export async function deriveQPS(targetQps: number, scenarioSteps?: any[], thinkTimeRange?: number[]) {
+  return post('/generation/derive-qps', {
+    target_qps: targetQps,
+    scenario_steps: scenarioSteps,
+    think_time_range: thinkTimeRange,
   });
-  if (!response.ok) throw new Error(`Generate failed: ${response.statusText}`);
-  return response.json();
 }
 
 export async function generatePreview(ir: any) {
-  const response = await fetch(`${API_BASE}/preview/generate`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ ir }),
-  });
-  if (!response.ok) throw new Error(`Preview failed: ${response.statusText}`);
-  return response.json();
+  return post('/preview/generate', { ir }, 60000);
 }
 
-export async function updatePreview(ir: any, feedback: string, provider?: string) {
-  const response = await fetch(`${API_BASE}/preview/update`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ ir, feedback, provider }),
-  });
-  if (!response.ok) throw new Error(`Update failed: ${response.statusText}`);
-  return response.json();
+export async function updatePreview(ir: any, feedback: string, provider?: string, temperature: number = 0.3) {
+  return post('/preview/update', { ir, feedback, provider, temperature }, 120000);
 }
 
 export async function checkDependencies(ir: any) {
-  const response = await fetch(`${API_BASE}/preview/dependency-check`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ ir }),
-  });
-  if (!response.ok) throw new Error(`Dependency check failed: ${response.statusText}`);
-  return response.json();
+  return post('/preview/dependency-check', { ir });
 }
 
 export async function validateJMX(jmx: string) {
-  const response = await fetch(`${API_BASE}/validation/validate`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ jmx }),
-  });
-  if (!response.ok) throw new Error(`Validation failed: ${response.statusText}`);
-  return response.json();
+  return post('/validation/validate', { jmx });
+}
+
+export async function checkReasonableness(ir: any) {
+  return post('/validation/validate-ir-reasonable', { ir });
 }
 
 export async function getProviders() {
-  const response = await fetch(`${API_BASE}/config/providers`);
-  if (!response.ok) throw new Error(`Get providers failed: ${response.statusText}`);
-  return response.json();
+  return apiFetch('/config/providers');
 }
 
 export async function getComponents() {
-  const response = await fetch(`${API_BASE}/config/components`);
-  if (!response.ok) throw new Error(`Get components failed: ${response.statusText}`);
-  return response.json();
+  return apiFetch('/config/components');
 }
 
 export async function getJmeterVersions() {
-  const response = await fetch(`${API_BASE}/config/jmeter-versions`);
-  if (!response.ok) throw new Error(`Get versions failed: ${response.statusText}`);
-  return response.json();
+  return apiFetch('/config/jmeter-versions');
 }
 
 export async function getStatus() {
-  const response = await fetch(`${API_BASE}/config/status`);
-  if (!response.ok) throw new Error(`Status check failed: ${response.statusText}`);
-  return response.json();
+  return apiFetch('/config/status');
 }

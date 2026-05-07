@@ -4,7 +4,6 @@ import xml.etree.ElementTree as ET
 from xml.dom import minidom
 from typing import Dict, Optional
 import yaml
-import os
 import copy
 
 from jinja2 import Environment, FileSystemLoader
@@ -16,6 +15,7 @@ from core.ir_model import (
     ConfigElementModel, ListenerModel, ThreadGroupModel, TestPlanModel,
 )
 from components.registry import TemplateRegistry
+from core.path_config import COMPONENTS_DIR, CONFIG_DIR
 
 
 # Components whose class names differ between JMeter versions
@@ -46,9 +46,9 @@ DEFAULT_CLASS_MAPPINGS = {
 
 def _load_version_config() -> dict:
     """Load JMeter version compatibility configuration."""
-    config_path = os.path.join("config", "jmeter_versions.yaml")
-    if os.path.exists(config_path):
-        with open(config_path, encoding="utf-8") as f:
+    config_path = CONFIG_DIR / "jmeter_versions.yaml"
+    if config_path.exists():
+        with config_path.open(encoding="utf-8") as f:
             return yaml.safe_load(f)
     return {"default": "5.0", "versions": {}}
 
@@ -125,7 +125,8 @@ class JMXAssembler:
         "ForEachController": ["thread_group", "controller"],
     }
 
-    def __init__(self, template_dir: str = "components", jmeter_version: str = "5.0"):
+    def __init__(self, template_dir: str | None = None, jmeter_version: str = "5.0"):
+        template_dir = template_dir or str(COMPONENTS_DIR)
         self.jinja_env = Environment(
             loader=FileSystemLoader(template_dir),
             autoescape=False,  # We handle XML escaping manually in _sanitize_context

@@ -30,6 +30,7 @@ export interface Step {
   headers?: { key: string; value: string }[];
   assertions?: Assertion[];
   extractors?: Extractor[];
+  timers?: Timer[];
 }
 
 export interface Assertion {
@@ -68,6 +69,47 @@ export interface Listener {
   type: string;
   name?: string;
   file?: string;
+}
+
+export interface PluginInfo {
+  name: string;
+  required: boolean;
+  description: string;
+  component?: string | null;
+  severity: string;
+}
+
+export interface SanityWarning {
+  severity: string;
+  category: string;
+  message: string;
+  suggestion?: string;
+  location?: string;
+}
+
+export interface VariableChain {
+  variable: string;
+  source: string;
+  source_step?: string | null;
+  usages: { scenario: string; step: string; field: string }[];
+}
+
+export interface PlanSummary {
+  test_plan_name: string;
+  thread_group_count: number;
+  scenario_count: number;
+  step_count: number;
+  total_threads: number;
+  duration_seconds?: number | null;
+  thread_groups: {
+    name: string;
+    threads: number;
+    rampUp: number;
+    duration?: number | null;
+    loop?: number | null;
+    scenario_count: number;
+  }[];
+  variable_chains: VariableChain[];
 }
 
 export interface ProviderInfo {

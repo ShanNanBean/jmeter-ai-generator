@@ -1,7 +1,7 @@
 """Dependency Checker — validates variable definition-reference chains."""
 
 import re
-from typing import List, Set
+from typing import Any, Dict, List, Set
 
 from core.ir_model import IRDocument
 
@@ -53,6 +53,62 @@ class DependencyChecker:
                     available.add(ext.variable)
 
         return issues
+
+    def get_variable_chains(self, ir: IRDocument) -> List[Dict[str, Any]]:
+        """Build variable source and usage chains for preview display."""
+        chains: Dict[str, Dict[str, Any]] = {}
+
+        if ir.testPlan.variables:
+            for var in ir.testPlan.variables:
+                chains[var.key] = {
+                    "variable": var.key,
+                    "source": "测试计划变量",
+                    "source_step": None,
+                    "usages": [],
+                }
+
+        for scenario in ir.scenarios:
+            for ds in scenario.dataSources or []:
+                for var_name in ds.vars or []:
+                    chains.setdefault(var_name, {
+                        "variable": var_name,
+                        "source": f"数据源 {ds.file or ds.type.value}",
+                        "source_step": None,
+                        "usages": [],
+                    })
+                if ds.variable:
+                    chains.setdefault(ds.variable, {
+                        "variable": ds.variable,
+                        "source": f"数据源 {ds.type.value}",
+                        "source_step": None,
+                        "usages": [],
+                    })
+
+            for step in scenario.steps:
+                for ref in self._extract_references(step):
+                    if ref in JMETER_BUILTIN_FUNCTIONS:
+                        continue
+                    chains.setdefault(ref, {
+                        "variable": ref,
+                        "source": "未找到来源",
+                        "source_step": None,
+                        "usages": [],
+                    })
+                    chains[ref]["usages"].append({
+                        "scenario": scenario.name,
+                        "step": step.name,
+                        "field": "请求参数/路径/请求头/Body",
+                    })
+
+                for ext in step.extractors or []:
+                    chains[ext.variable] = {
+                        "variable": ext.variable,
+                        "source": f"接口响应提取（{ext.type.value}）",
+                        "source_step": step.name,
+                        "usages": chains.get(ext.variable, {}).get("usages", []),
+                    }
+
+        return list(chains.values())
 
     def _extract_references(self, step) -> Set[str]:
         """Find all ${variable} references in a step's fields."""

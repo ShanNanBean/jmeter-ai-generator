@@ -1,8 +1,9 @@
 """Component template registry — maps component types to Jinja2 template paths."""
 
-import os
 from typing import Dict, List
 import yaml
+
+from core.path_config import COMPONENTS_DIR, EXTENSIONS_DIR
 
 
 class TemplateRegistry:
@@ -45,14 +46,14 @@ class TemplateRegistry:
         "ViewResultsFullVisualizer": "listeners/ViewResultsFullVisualizer.xml.j2",
     }
 
-    def __init__(self, template_dir: str = "components"):
-        self.template_dir = template_dir
+    def __init__(self, template_dir: str | None = None):
+        self.template_dir = str(template_dir or COMPONENTS_DIR)
         self._load_extensions()
 
     def _load_extensions(self):
-        ext_path = os.path.join("extensions", "custom_components.yaml")
-        if os.path.exists(ext_path):
-            with open(ext_path, encoding="utf-8") as f:
+        ext_path = EXTENSIONS_DIR / "custom_components.yaml"
+        if ext_path.exists():
+            with ext_path.open(encoding="utf-8") as f:
                 customs = yaml.safe_load(f) or []
             for comp in customs:
                 self.TEMPLATE_MAP[comp["name"]] = comp["template"]

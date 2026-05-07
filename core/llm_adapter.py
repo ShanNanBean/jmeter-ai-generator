@@ -4,6 +4,7 @@ from abc import ABC, abstractmethod
 from typing import AsyncIterator, Optional, Dict, Any
 import os
 import yaml
+from core.path_config import CONFIG_DIR, FIXTURES_DIR
 
 
 class LLMResponse:
@@ -126,7 +127,7 @@ class OpenAIProvider(BaseLLMProvider):
 class MockLLMProvider(BaseLLMProvider):
     """Mock provider for testing — returns pre-crafted responses."""
 
-    def __init__(self, fixture_dir: str = "tests/fixtures"):
+    def __init__(self, fixture_dir: str = str(FIXTURES_DIR)):
         self.fixture_dir = fixture_dir
 
     async def generate(self, system_prompt, user_prompt, temperature=0.3, max_tokens=4096):
@@ -149,10 +150,10 @@ class MockLLMProvider(BaseLLMProvider):
 class LLMProviderRegistry:
     """Registry for LLM providers, loaded from YAML config."""
 
-    def __init__(self, config_path: str = "config/llm_providers.yaml"):
+    def __init__(self, config_path: str | None = None):
         self._providers: Dict[str, BaseLLMProvider] = {}
         self._default_provider: str = "claude"
-        self._load_config(config_path)
+        self._load_config(config_path or str(CONFIG_DIR / "llm_providers.yaml"))
 
     def _load_config(self, config_path: str):
         with open(config_path, encoding="utf-8") as f:
@@ -165,13 +166,20 @@ class LLMProviderRegistry:
             self._providers[name] = provider
 
     def _create_provider(self, name: str, config: dict) -> BaseLLMProvider:
-        api_key = os.environ.get(
-            config.get("env_key", f"{name.upper()}_API_KEY"),
-            config.get("api_key", ""),
-        )
+        env_key = config.get("env_key")
+        api_key = config.get("api_key", "")
+        if not api_key and env_key:
+            api_key = os.environ.get(env_key, "")
         model = config.get("model", "")
         base_url = config.get("base_url", None)
         kwargs = config.get("kwargs", {})
+
+        if not api_key:
+            if env_key:
+                raise ValueError(
+                    f"Provider '{name}' has no API key configured. Add api_key to config or set {env_key} environment variable."
+                )
+            raise ValueError(f"Provider '{name}' has no API key configured. Add api_key to config.")
 
         provider_type = config.get("type", name)
         if provider_type == "anthropic" or provider_type == "claude":

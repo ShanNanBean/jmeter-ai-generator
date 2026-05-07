@@ -8,6 +8,11 @@ node_modules/
 .vite/
 .vue-global-types/
 
+# Local secrets and private docs
+config/llm_providers.yaml
+deepseek方案.md
+jmeter-ai-generator-plan.md
+
 # Claude local settings (user-specific)
 .claude/settings.local.json
 
