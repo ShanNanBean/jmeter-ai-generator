@@ -10,8 +10,7 @@ node_modules/
 
 # Local secrets and private docs
 config/llm_providers.yaml
-deepseek方案.md
-jmeter-ai-generator-plan.md
+.claude/
 
 # Claude local settings (user-specific)
 .claude/settings.local.json
