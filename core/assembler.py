@@ -187,17 +187,16 @@ class JMXAssembler:
 
     def _add_scenario(self, parent_hash_tree: ET.Element, scenario):
         """Add a complete scenario to parent hashTree."""
+        self._add_scenario_setup(parent_hash_tree, scenario)
+
         if scenario.controllers:
             for ctrl in scenario.controllers:
-                ctrl_elem = self._render_component(ctrl.type.value, ctrl)
-                parent_hash_tree.append(ctrl_elem)
-                ctrl_hash_tree = ET.SubElement(parent_hash_tree, "hashTree")
-                self._populate_scenario_tree(ctrl_hash_tree, scenario)
+                self._render_controller(parent_hash_tree, ctrl, scenario)
         else:
-            self._populate_scenario_tree(parent_hash_tree, scenario)
+            self._render_steps(parent_hash_tree, scenario.steps)
 
-    def _populate_scenario_tree(self, tree: ET.Element, scenario):
-        """Populate a hashTree with data sources, config, timers, and steps."""
+    def _add_scenario_setup(self, tree: ET.Element, scenario):
+        """Render scenario-level setup elements before flow execution."""
         # Data sources
         for ds in (scenario.dataSources or []):
             ds_elem = self._render_component(ds.type.value, ds)
@@ -216,41 +215,62 @@ class JMXAssembler:
             tree.append(t_elem)
             ET.SubElement(tree, "hashTree")
 
-        # Steps (samplers)
-        for step in scenario.steps:
-            sampler_elem = self._render_component(step.type.value, step)
-            tree.append(sampler_elem)
-            sampler_hash = ET.SubElement(tree, "hashTree")
+    def _populate_scenario_tree(self, tree: ET.Element, scenario):
+        """Populate a hashTree with data sources, config, timers, and steps."""
+        self._add_scenario_setup(tree, scenario)
+        self._render_steps(tree, scenario.steps)
 
-            # Pre-processors
-            for pre in (step.preProcessors or []):
-                pp_elem = self._render_component(pre.type.value, pre)
-                sampler_hash.append(pp_elem)
-                ET.SubElement(sampler_hash, "hashTree")
+    def _render_steps(self, tree: ET.Element, steps):
+        for step in (steps or []):
+            self._render_step(tree, step)
 
-            # Post-processors
-            for post in (step.postProcessors or []):
-                pp_elem = self._render_component(post.type.value, post)
-                sampler_hash.append(pp_elem)
-                ET.SubElement(sampler_hash, "hashTree")
+    def _render_controller(self, tree: ET.Element, controller: ControllerModel, scenario=None):
+        ctrl_elem = self._render_component(controller.type.value, controller)
+        tree.append(ctrl_elem)
+        ctrl_hash_tree = ET.SubElement(tree, "hashTree")
 
-            # Extractors
-            for ext in (step.extractors or []):
-                ext_elem = self._render_component(ext.type.value, ext)
-                sampler_hash.append(ext_elem)
-                ET.SubElement(sampler_hash, "hashTree")
+        has_children = bool(controller.childControllers or controller.childSteps)
+        if has_children:
+            for child in (controller.childControllers or []):
+                self._render_controller(ctrl_hash_tree, child, scenario)
+            self._render_steps(ctrl_hash_tree, controller.childSteps)
+        elif scenario is not None:
+            self._render_steps(ctrl_hash_tree, scenario.steps)
 
-            # Assertions
-            for assertion in (step.assertions or []):
-                a_elem = self._render_component(assertion.type.value, assertion)
-                sampler_hash.append(a_elem)
-                ET.SubElement(sampler_hash, "hashTree")
+    def _render_step(self, tree: ET.Element, step: StepModel):
+        sampler_elem = self._render_component(step.type.value, step)
+        tree.append(sampler_elem)
+        sampler_hash = ET.SubElement(tree, "hashTree")
 
-            # Step-level timers
-            for timer in (step.timers or []):
-                t_elem = self._render_component(timer.type.value, timer)
-                sampler_hash.append(t_elem)
-                ET.SubElement(sampler_hash, "hashTree")
+        # Pre-processors
+        for pre in (step.preProcessors or []):
+            pp_elem = self._render_component(pre.type.value, pre)
+            sampler_hash.append(pp_elem)
+            ET.SubElement(sampler_hash, "hashTree")
+
+        # Post-processors
+        for post in (step.postProcessors or []):
+            pp_elem = self._render_component(post.type.value, post)
+            sampler_hash.append(pp_elem)
+            ET.SubElement(sampler_hash, "hashTree")
+
+        # Extractors
+        for ext in (step.extractors or []):
+            ext_elem = self._render_component(ext.type.value, ext)
+            sampler_hash.append(ext_elem)
+            ET.SubElement(sampler_hash, "hashTree")
+
+        # Assertions
+        for assertion in (step.assertions or []):
+            a_elem = self._render_component(assertion.type.value, assertion)
+            sampler_hash.append(a_elem)
+            ET.SubElement(sampler_hash, "hashTree")
+
+        # Step-level timers
+        for timer in (step.timers or []):
+            t_elem = self._render_component(timer.type.value, timer)
+            sampler_hash.append(t_elem)
+            ET.SubElement(sampler_hash, "hashTree")
 
     def _render_component(self, component_type: str, data) -> ET.Element:
         """Render a component using its Jinja2 template.

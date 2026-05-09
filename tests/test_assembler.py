@@ -10,7 +10,19 @@ import json
 PROJECT_ROOT = os.path.dirname(os.path.dirname(__file__))
 sys.path.insert(0, PROJECT_ROOT)
 
-from core.ir_model import IRDocument, TestPlanModel, ThreadGroupModel, ScenarioModel, StepModel
+from core.ir_model import (
+    IRDocument,
+    TestPlanModel,
+    ThreadGroupModel,
+    ScenarioModel,
+    StepModel,
+    ComponentType,
+    AssertionModel,
+    DataSourceModel,
+    ProcessorModel,
+    ControllerModel,
+    ExtractorModel,
+)
 from core.assembler import JMXAssembler
 
 
@@ -96,6 +108,251 @@ def test_assemble_has_htree_sibling_nesting():
     sampler_idx = next(i for i, c in enumerate(list(tg_ht)) if c.tag == "HTTPSamplerProxy")
     sampler_children = list(tg_ht)
     assert sampler_children[sampler_idx + 1].tag == "hashTree"
+
+
+def test_misplaced_timer_step_is_normalized_to_scenario_timer():
+    """LLM output may place timer objects in steps; normalize them before step validation."""
+    ir_dict = {
+        "testPlan": {"name": "timer test"},
+        "threadGroups": [{"name": "users", "threads": 1, "rampUp": 1}],
+        "scenarios": [
+            {
+                "name": "flow",
+                "threadGroup": "users",
+                "steps": [
+                    {"type": "HTTPSamplerProxy", "name": "request", "path": "/api"},
+                    {"type": "ConstantTimer", "delayMs": 100},
+                ],
+            }
+        ],
+    }
+
+    ir = IRDocument.model_validate(ir_dict)
+
+    assert len(ir.scenarios[0].steps) == 1
+    assert ir.scenarios[0].timers is not None
+    assert ir.scenarios[0].timers[0].type == ComponentType.CONSTANT_TIMER
+    assert ir.scenarios[0].timers[0].delayMs == 100
+
+def test_templates_emit_jmeter_gui_safe_property_types():
+    assembler = _get_assembler()
+    ir = IRDocument(
+        testPlan=TestPlanModel(name="safe props"),
+        threadGroups=[ThreadGroupModel(name="users", threads=1, rampUp=1, duration=None, delay=None)],
+        scenarios=[
+            ScenarioModel(
+                name="flow",
+                threadGroup="users",
+                dataSources=[DataSourceModel(type="CSVDataSet", file="users.csv", vars=["user"])],
+                steps=[
+                    StepModel(
+                        type="HTTPSamplerProxy",
+                        name="request",
+                        path="/api",
+                        assertions=[
+                            AssertionModel(type="DurationAssertion"),
+                            AssertionModel(type="SizeAssertion"),
+                            AssertionModel(type="ResponseAssertion", pattern="200"),
+                        ],
+                        preProcessors=[ProcessorModel(type="JSR223PreProcessor", script="")],
+                        postProcessors=[ProcessorModel(type="JSR223PostProcessor", script="")],
+                    )
+                ],
+            )
+        ],
+    )
+
+    root = ET.fromstring(assembler.assemble(ir))
+    thread_group = root.find(".//ThreadGroup")
+    csv = root.find(".//CSVDataSet")
+    pre_processor = root.find(".//JSR223PreProcessor")
+    post_processor = root.find(".//JSR223PostProcessor")
+
+    assert thread_group.find("stringProp[@name='ThreadGroup.duration']").text == "0"
+    assert thread_group.find("stringProp[@name='ThreadGroup.delay']").text == "0"
+    assert csv.find("boolProp[@name='quotedData']").text == "false"
+    assert pre_processor.get("guiclass") == "TestBeanGUI"
+    assert post_processor.get("guiclass") == "TestBeanGUI"
+    assert pre_processor.find("boolProp[@name='cacheKey']").text == "true"
+    assert post_processor.find("boolProp[@name='cacheKey']").text == "true"
+    assert root.find(".//collectionProp[@name='Assertion.test_strings']") is not None
+    assert root.find(".//stringProp[@name='DurationAssertion.duration']").text == "3000"
+    assert root.find(".//stringProp[@name='Assertion.expected_size']").text == "1024"
+
+
+def test_nested_controller_children_render_without_flat_step_duplication():
+    assembler = _get_assembler()
+    ir = IRDocument(
+        testPlan=TestPlanModel(name="nested controllers"),
+        threadGroups=[ThreadGroupModel(name="users", threads=1, rampUp=1)],
+        scenarios=[
+            ScenarioModel(
+                name="batch upload",
+                threadGroup="users",
+                steps=[
+                    StepModel(type="HTTPSamplerProxy", name="legacy flat step", path="/legacy"),
+                ],
+                controllers=[
+                    ControllerModel(
+                        type="WhileController",
+                        name="Upload pressure loop",
+                        whileCondition="${__groovy(true)}",
+                        childControllers=[
+                            ControllerModel(
+                                type="IfController",
+                                name="Need new batch",
+                                condition='${__groovy(vars.get("needBatch") != "false")}',
+                                childSteps=[
+                                    StepModel(
+                                        type="HTTPSamplerProxy",
+                                        name="Create batch",
+                                        method="POST",
+                                        path="/scan-batch",
+                                    )
+                                ],
+                            )
+                        ],
+                        childSteps=[
+                            StepModel(
+                                type="HTTPSamplerProxy",
+                                name="Upload paper",
+                                method="POST",
+                                path="/paper",
+                            )
+                        ],
+                    )
+                ],
+            )
+        ],
+    )
+
+    root = ET.fromstring(assembler.assemble(ir))
+    samplers = root.findall(".//HTTPSamplerProxy")
+    assert [sampler.get("testname") for sampler in samplers] == ["Create batch", "Upload paper"]
+
+    while_controller = root.find(".//WhileController")
+    assert while_controller is not None
+    plan_ht = root.find("hashTree/hashTree/hashTree")
+    children = list(plan_ht)
+    while_idx = next(i for i, child in enumerate(children) if child is while_controller)
+    while_hash = children[while_idx + 1]
+    assert while_hash.tag == "hashTree"
+    assert while_hash.find("IfController") is not None
+    assert while_hash.find("HTTPSamplerProxy[@testname='Upload paper']") is not None
+
+
+def test_batch_upload_flow_primitives_render_in_controller_tree():
+    ordinal_script = """
+if (vars.get('batchId') == null || vars.get('scanOrdinal') == null || vars.get('scanOrdinal') as int >= 300) {
+    vars.put('needBatch', 'true')
+    vars.put('scanOrdinal', '0')
+}
+vars.put('scanOrdinal', (((vars.get('scanOrdinal') ?: '0') as int) + 1).toString())
+""".strip()
+    upload_body = """{
+    "batchId": "${batchId}",
+    "scanOrdinal": ${scanOrdinal}
+}"""
+    assembler = _get_assembler()
+    ir = IRDocument(
+        testPlan=TestPlanModel(name="batch flow"),
+        threadGroups=[ThreadGroupModel(name="users", threads=50, rampUp=30, duration=600)],
+        scenarios=[
+            ScenarioModel(
+                name="flow",
+                threadGroup="users",
+                dataSources=[DataSourceModel(type="CSVDataSet", file="exam-ids.csv", vars=["examId", "schoolId", "token"])],
+                steps=[],
+                controllers=[
+                    ControllerModel(
+                        type="WhileController",
+                        name="Upload pressure loop",
+                        whileCondition="${__groovy(true)}",
+                        childControllers=[
+                            ControllerModel(
+                                type="IfController",
+                                name="Need new batch",
+                                condition='${__groovy(vars.get("needBatch") != "false")}',
+                                childSteps=[
+                                    StepModel(
+                                        type="HTTPSamplerProxy",
+                                        name="Create batch",
+                                        method="POST",
+                                        domain="test-yj.xkw.com",
+                                        protocol="https",
+                                        path="/api/marking-exam-manager/tiny-client/scan-batch",
+                                        params=[{"name": "examId", "value": "${examId}"}],
+                                        extractors=[ExtractorModel(type="JSONExtractor", variable="batchId", path="$.data.batchId")],
+                                    )
+                                ],
+                            )
+                        ],
+                        childSteps=[
+                            StepModel(
+                                type="HTTPSamplerProxy",
+                                name="Upload paper",
+                                method="POST",
+                                domain="yuejuan.xkw.com",
+                                protocol="https",
+                                path="/api/marking-exam-manager/tiny-client/paper",
+                                body=upload_body,
+                                preProcessors=[ProcessorModel(type="JSR223PreProcessor", script=ordinal_script)],
+                            )
+                        ],
+                    )
+                ],
+            )
+        ],
+    )
+
+    root = ET.fromstring(assembler.assemble(ir))
+    create_batch = root.find(".//HTTPSamplerProxy[@testname='Create batch']")
+    upload_paper = root.find(".//HTTPSamplerProxy[@testname='Upload paper']")
+    assert create_batch is not None
+    assert upload_paper is not None
+    assert create_batch.find("stringProp[@name='HTTPSampler.domain']").text == "test-yj.xkw.com"
+    assert upload_paper.find("stringProp[@name='HTTPSampler.domain']").text == "yuejuan.xkw.com"
+    assert root.find(".//stringProp[@name='JSONPostProcessor.referenceNames']").text == "batchId"
+    assert root.find(".//stringProp[@name='JSONPostProcessor.jsonPathExprs']").text == "$.data.batchId"
+
+    body = upload_paper.find(".//stringProp[@name='Argument.value']").text
+    assert "${batchId}" in body
+    assert "${scanOrdinal}" in body
+
+    script = root.find(".//JSR223PreProcessor/stringProp[@name='script']").text
+    assert "scanOrdinal" in script
+    assert "300" in script
+    assert "needBatch" in script
+
+
+def test_controller_only_scenario_does_not_require_flat_steps():
+    ir = IRDocument.model_validate(
+        {
+            "testPlan": {"name": "controller only"},
+            "threadGroups": [{"name": "users", "threads": 1, "rampUp": 1}],
+            "scenarios": [
+                {
+                    "name": "flow",
+                    "threadGroup": "users",
+                    "controllers": [
+                        {
+                            "type": "WhileController",
+                            "name": "loop",
+                            "whileCondition": "${__groovy(true)}",
+                            "childSteps": [
+                                {"type": "HTTPSamplerProxy", "name": "request", "path": "/api"}
+                            ],
+                        }
+                    ],
+                }
+            ],
+        }
+    )
+
+    assert ir.scenarios[0].steps == []
+    root = ET.fromstring(_get_assembler().assemble(ir))
+    assert root.find(".//WhileController") is not None
+    assert root.find(".//HTTPSamplerProxy[@testname='request']") is not None
 
 
 def test_assemble_with_fixture():

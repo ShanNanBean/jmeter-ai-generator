@@ -4,6 +4,8 @@
       {% if body is defined and body %}
       <elementProp name="" elementType="HTTPArgument">
         <boolProp name="HTTPArgument.always_encode">false</boolProp>
+        <boolProp name="HTTPArgument.use_equals">false</boolProp>
+        <stringProp name="Argument.name"></stringProp>
         <stringProp name="Argument.value">{{ body }}</stringProp>
         <stringProp name="Argument.metadata">=</stringProp>
       </elementProp>

@@ -13,6 +13,6 @@ defaults:
   think_time_range: [500, 2000]  # ms
 
 llm:
-  default_provider: "qwen"
+  default_provider: "deepseek"
   temperature: 0.3
   max_tokens: 4096

@@ -1,6 +1,6 @@
-<JSR223PostProcessor guiclass="JSR223PostProcessorGui" testclass="JSR223PostProcessor" testname="{{ name | default('JSR223 PostProcessor') }}" enabled="true">
+<JSR223PostProcessor guiclass="TestBeanGUI" testclass="JSR223PostProcessor" testname="{{ name | default('JSR223 PostProcessor') }}" enabled="true">
   <stringProp name="scriptLanguage">{{ language | default('groovy') }}</stringProp>
   <stringProp name="parameters"></stringProp>
-  <stringProp name="cacheKey">{{ cacheKey | default('true') }}</stringProp>
+  <boolProp name="cacheKey">{{ cacheKey | default('true') }}</boolProp>
   <stringProp name="script">{{ script | default('') }}</stringProp>
 </JSR223PostProcessor>

@@ -1,6 +1,6 @@
-<JSR223PreProcessor guiclass="JSR223PreProcessorGui" testclass="JSR223PreProcessor" testname="{{ name | default('JSR223 PreProcessor') }}" enabled="true">
+<JSR223PreProcessor guiclass="TestBeanGUI" testclass="JSR223PreProcessor" testname="{{ name | default('JSR223 PreProcessor') }}" enabled="true">
   <stringProp name="scriptLanguage">{{ language | default('groovy') }}</stringProp>
   <stringProp name="parameters"></stringProp>
-  <stringProp name="cacheKey">{{ cacheKey | default('true') }}</stringProp>
+  <boolProp name="cacheKey">{{ cacheKey | default('true') }}</boolProp>
   <stringProp name="script">{{ script | default('') }}</stringProp>
 </JSR223PreProcessor>

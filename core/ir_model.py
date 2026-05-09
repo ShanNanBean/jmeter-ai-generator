@@ -1,6 +1,6 @@
 """IR (Intermediate Representation) data models for JMeter test plans."""
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 from typing import Optional, List, Dict, Any
 from enum import Enum
 
@@ -214,6 +214,9 @@ class ControllerModel(BaseModel):
     inputVar: Optional[str] = None
     outputVar: Optional[str] = None
     separator: Optional[str] = "_"
+    # Nested flow
+    childSteps: Optional[List[StepModel]] = None
+    childControllers: Optional[List["ControllerModel"]] = None
 
 
 class ConfigElementModel(BaseModel):
@@ -234,7 +237,34 @@ class ScenarioModel(BaseModel):
     configElements: Optional[List[ConfigElementModel]] = None
     dataSources: Optional[List[DataSourceModel]] = None
     timers: Optional[List[TimerModel]] = None
-    steps: List[StepModel]
+    steps: List[StepModel] = Field(default_factory=list)
+
+    @model_validator(mode="before")
+    @classmethod
+    def move_misplaced_timers(cls, data):
+        if not isinstance(data, dict):
+            return data
+        if not isinstance(data.get("steps"), list):
+            return data
+
+        steps = []
+        timers = list(data.get("timers") or [])
+        timer_types = {
+            ComponentType.CONSTANT_TIMER.value,
+            ComponentType.UNIFORM_RANDOM_TIMER.value,
+            ComponentType.GAUSSIAN_RANDOM_TIMER.value,
+        }
+
+        for item in data["steps"]:
+            if isinstance(item, dict) and item.get("type") in timer_types and "name" not in item:
+                timers.append(item)
+            else:
+                steps.append(item)
+
+        data = {**data, "steps": steps}
+        if timers:
+            data["timers"] = timers
+        return data
 
 
 class ThreadGroupModel(BaseModel):

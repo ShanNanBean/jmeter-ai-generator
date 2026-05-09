@@ -10,10 +10,10 @@
   {% if duration is defined and duration %}
   <boolProp name="ThreadGroup.scheduler">true</boolProp>
   <stringProp name="ThreadGroup.duration">{{ duration }}</stringProp>
-  <stringProp name="ThreadGroup.delay">{{ delay | default('') }}</stringProp>
+  <stringProp name="ThreadGroup.delay">{{ delay | default('0', true) }}</stringProp>
   {% else %}
   <boolProp name="ThreadGroup.scheduler">false</boolProp>
-  <stringProp name="ThreadGroup.duration"></stringProp>
-  <stringProp name="ThreadGroup.delay"></stringProp>
+  <stringProp name="ThreadGroup.duration">0</stringProp>
+  <stringProp name="ThreadGroup.delay">0</stringProp>
   {% endif %}
 </ThreadGroup>

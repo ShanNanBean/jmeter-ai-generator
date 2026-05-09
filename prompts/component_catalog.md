@@ -8,11 +8,13 @@ Available JMeter component types for IR generation:
 - **TCPSampler**: TCP protocol sampler. Fields: name, server, port_tcp, classname
 
 ## Controllers
-- **LoopController**: Loop execution N times. Fields: name, loops, continueForever
-- **IfController**: Conditional execution. Fields: name, condition, evaluateAll
-- **WhileController**: Loop while condition is true. Fields: name, whileCondition
-- **TransactionController**: Group steps as a transaction. Fields: name, includeTimers
-- **ForEachController**: Iterate over variable prefix. Fields: name, inputVar, outputVar, separator
+- **LoopController**: Loop execution N times. Fields: name, loops, continueForever, childSteps, childControllers
+- **IfController**: Conditional execution. Fields: name, condition, evaluateAll, childSteps, childControllers
+- **WhileController**: Loop while condition is true. Fields: name, whileCondition, childSteps, childControllers
+- **TransactionController**: Group steps as a transaction. Fields: name, includeTimers, childSteps, childControllers
+- **ForEachController**: Iterate over variable prefix. Fields: name, inputVar, outputVar, separator, childSteps, childControllers
+
+Controller nesting: use `childSteps` for samplers that execute inside a controller and `childControllers` for nested controllers. Do not put the same sampler in both scenario-level `steps` and a controller's `childSteps`. For continuous pressure flows, prefer a WhileController containing conditional setup and the hot sampler.
 
 ## Assertions
 - **ResponseAssertion**: Check response content/code. Fields: name, pattern, field, test_type
@@ -45,6 +47,8 @@ Available JMeter component types for IR generation:
 ## Processors
 - **JSR223PreProcessor**: Pre-request script. Fields: name, language, script, cacheKey
 - **JSR223PostProcessor**: Post-response script. Fields: name, language, script, cacheKey
+
+Use JSR223 processors when JMeter functions are not enough for per-thread state machines, such as resetting `scanOrdinal` after every 300 uploads, setting `needBatch`, or updating variables from response-dependent control flow. Store per-thread state in `vars`, not global properties.
 
 ## Listeners
 - **SummaryReport**: Summary statistics report. Fields: name
